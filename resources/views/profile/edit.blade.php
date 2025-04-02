@@ -36,6 +36,9 @@
 
                         <!-- Show Recovery Codes -->
                         <div class="mt-4">
+                            <h3 class="font-semibold text-lg">Recovery Codes:</h3>
+                            <ul class="mt-2 bg-gray-100 p-3 rounded">
+                                @foreach (auth()->user()->recoveryCodes() as $code)
                                     <li class="font-mono text-sm">{{ $code }}</li>
                                 @endforeach
                             </ul>
