@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Laravel\Fortify\Fortify;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -22,13 +23,26 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(Request $request)
     {
-        $request->authenticate();
-
-        $request->session()->regenerate();
-
-        return redirect()->intended(route('dashboard', absolute: false));
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+    
+        $user = \App\Models\User::where('email', $request->email)->first();
+    
+        if ($user && $user->two_factor_secret) {
+            $request->session()->put('login.id', $user->id);
+    
+            return redirect()->route('two-factor.login'); // Redirect to 2FA challenge
+        }
+    
+        if (Auth::attempt($request->only('email', 'password'), $request->filled('remember'))) {
+            return redirect()->intended(route('dashboard'));
+        }
+    
+        return back()->withErrors(['email' => 'Invalid credentials']);
     }
 
     /**
