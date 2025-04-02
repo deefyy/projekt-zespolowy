@@ -19,6 +19,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'last_name',
         'email',
         'password',
         'role'
@@ -45,5 +46,12 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    public function managedCompetitions() {
+        return $this->hasMany(CompetitionManagement::class);
+    }
+
+    public function registeredCompetitions() {
+        return $this->hasMany(CompetitionRegistration::class);
     }
 }
