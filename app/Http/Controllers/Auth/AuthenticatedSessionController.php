@@ -32,7 +32,7 @@ class AuthenticatedSessionController extends Controller
     
         $user = \App\Models\User::where('email', $request->email)->first();
     
-        if ($user && $user->two_factor_secret) {
+        if ($user && $user->two_factor_confirmed_at) {
             $request->session()->put('login.id', $user->id);
     
             return redirect()->route('two-factor.login'); // Redirect to 2FA challenge
