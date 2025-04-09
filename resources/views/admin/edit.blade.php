@@ -22,7 +22,7 @@
 
                             <div class="mb-3">
                                 <label for="last_name" class="form-label">Nazwisko</label>
-                                <input type="text" name="last_name" id="last_name" class="form-control" value="{{ $user->last_name }}" required>
+                                <input type="text" name="last_name" id="last_name" class="form-control" value="{{ $user->last_name }}">
                             </div>
 
                             <div class="mb-3">
@@ -33,8 +33,8 @@
                             <div class="mb-3">
                                 <label for="role" class="form-label">Rola</label>
                                 <select name="role" id="role" class="form-select" required>
-                                    <option value="user">Użytkownik</option>
-                                    <option value="admin">Administrator</option>
+                                    <option value="user" {{ old('role', $user->role ?? '') == 'user' ? 'selected' : '' }}>Użytkownik</option>
+                                    <option value="admin" {{ old('role', $user->role ?? '') == 'admin' ? 'selected' : '' }}>Administrator</option>
                                 </select>
                             </div>
 

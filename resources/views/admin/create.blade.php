@@ -21,7 +21,7 @@
 
                             <div class="mb-3">
                                 <label for="last_name" class="form-label">Nazwisko</label>
-                                <input type="text" name="last_name" id="last_name" class="form-control" required>
+                                <input type="text" name="last_name" id="last_name" class="form-control">
                             </div>
 
                             <div class="mb-3">

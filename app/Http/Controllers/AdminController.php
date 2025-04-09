@@ -40,7 +40,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'name' => 'required',
-            'last_name' => 'required',
+            'last_name' => 'nullable',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
             'role' => 'required|in:user,employee,admin',
@@ -70,7 +70,7 @@ class AdminController extends Controller
 
         $request->validate([
             'name' => 'required',
-            'last_name' => 'required',
+            'last_name' => 'nullable',
             'email' => 'required|email|unique:users,email,'.$user->id,
             'role' => 'required|in:user,employee,admin',
         ]);
