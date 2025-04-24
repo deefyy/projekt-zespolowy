@@ -10,7 +10,8 @@ class CompetitionRegistration extends Model
     
     protected $fillable = [
         'user_id',
-        'competition_id'
+        'competition_id',
+        'student_id'
     ];
 
     public function user() {
@@ -19,5 +20,8 @@ class CompetitionRegistration extends Model
 
     public function competition() {
         return $this->belongsTo(Competition::class);
+    }
+    public function student() {
+        return $this->belongsTo(Student::class);
     }
 }

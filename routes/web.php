@@ -2,15 +2,16 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CompetitionController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index']) ->middleware(['auth', 'verified']) ->name('dashboard');
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -26,5 +27,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::put('/update/{id}', [AdminController::class, 'update'])->name('updateUser');
     Route::delete('/delete/{id}', [AdminController::class, 'destroy'])->name('deleteUser');
 });
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/competitions', [CompetitionController::class, 'index'])->name('competitions.index');
+    Route::get('/competitions/create', [CompetitionController::class, 'create'])->name('competitions.create');
+    Route::get('/competitions/{competition}', [CompetitionController::class, 'show'])->name('competitions.show');
+    Route::post('/competitions', [CompetitionController::class, 'store'])->name('competitions.store');
+    Route::get('/competitions/{competition}/register', [CompetitionController::class, 'showRegistrationForm'])->name('competitions.showRegisterForm');
+    Route::post('/competitions/{competition}/register-students', [CompetitionController::class, 'registerStudents'])->name('competitions.registerStudents');
+});
+
 
 require __DIR__.'/auth.php';
