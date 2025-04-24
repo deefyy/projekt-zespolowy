@@ -38,8 +38,8 @@ class CustomVerifyEmail extends BaseVerifyEmail
 
         return (new MailMessage)
             ->subject('Weryfikacja E-mail')
-            ->greeting('Czołem')
-            ->line('Testowa wiadomość')
+            ->greeting('Czołem!')
+            ->line('Potwierdź swoje konto klikając przycisk poniżej.')
             ->action('Potwierdź Email', $this->verificationUrl($notifiable))
             ->line('Jeśli to nie Ty zakładałeś konto, możesz zignorować tę wiadomość.')
             ->salutation('Pozdrawiamy, Zespół Konkursu'); 

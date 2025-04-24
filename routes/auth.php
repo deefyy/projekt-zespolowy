@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController;
+use App\Http\Controllers\Auth\TwoFactorDisableController;
 
 Route::middleware('guest')->group(function () {
 
@@ -35,6 +36,13 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    Route::post('/two-factor/disable-link', [TwoFactorDisableController::class, 'sendLink'])
+    ->name('two-factor.send-disable-link');
+
+    Route::get('/two-factor/disable/{id}/{hash}', [TwoFactorDisableController::class, 'disable'])
+    ->name('two-factor.disable')
+    ->middleware('signed');
 });
 
 Route::middleware('auth')->group(function () {
