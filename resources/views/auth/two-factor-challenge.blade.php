@@ -55,5 +55,20 @@
                 </x-primary-button>
             </div>
         </form>
+        @if (session('status'))
+            <div class="mb-4 font-medium text-sm text-green-600">
+                {{ session('status') }}
+            </div>
+        @endif
+        <form method="POST" action="{{ route('two-factor.send-disable-link') }}" class="mt-4">
+            @csrf
+
+            <input type="hidden" name="email" value="{{session('email')}}" />
+
+            <x-primary-button>
+                {{ __('Send email to disable 2FA') }}
+            </x-primary-button>
+        </form>
+
     </div>
 </x-guest-layout>
