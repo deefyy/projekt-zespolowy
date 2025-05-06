@@ -30,6 +30,11 @@
                     <input type="date" name="end_date" class="form-input rounded-md shadow-sm mt-1 block w-full" required>
                 </div>
 
+                <div class="mb-4">
+                    <label class="block font-medium text-sm text-gray-700">Koniec zapisów</label>
+                    <input type="date" name="registration_deadline" class="form-input rounded-md shadow-sm mt-1 block w-full" required>
+                </div>
+
                 <div class="flex justify-end">
                     <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
                         Zapisz konkurs

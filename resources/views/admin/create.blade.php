@@ -1,59 +1,59 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="h4 fw-semibold text-center text-muted">
-            {{ __('Dodaj użytkownika') }}
-        </h2>
+        <header class="bg-[#eaf0f6] border-b border-[#cdd7e4] py-6">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h1 class="text-2xl font-bold text-[#002d62] m-0">Dodaj użytkownika</h1>
+            </div>
+        </header>
     </x-slot>
 
     <div class="container py-4">
         <div class="row justify-content-center">
             <div class="col-md-8">
-
-                <div class="card shadow-sm border-0">
+                <div class="card border-0 shadow-sm">
                     <div class="card-body">
                         <form method="POST" action="{{ route('admin.storeUser') }}">
                             @csrf
 
                             <div class="mb-3">
-                                <label for="name" class="form-label">Imię</label>
-                                <input type="text" name="name" id="name" class="form-control" required>
+                                <label for="name" class="form-label fw-semibold text-[#002d62]">Imię</label>
+                                <input type="text" name="name" id="name" class="form-control border border-[#002d62]" required>
                             </div>
 
                             <div class="mb-3">
-                                <label for="last_name" class="form-label">Nazwisko</label>
-                                <input type="text" name="last_name" id="last_name" class="form-control">
+                                <label for="last_name" class="form-label fw-semibold text-[#002d62]">Nazwisko</label>
+                                <input type="text" name="last_name" id="last_name" class="form-control border border-[#002d62]">
                             </div>
 
                             <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" name="email" id="email" class="form-control" required>
+                                <label for="email" class="form-label fw-semibold text-[#002d62]">Email</label>
+                                <input type="email" name="email" id="email" class="form-control border border-[#002d62]" required>
                             </div>
 
                             <div class="mb-3">
-                                <label for="password" class="form-label">Hasło</label>
-                                <input type="password" name="password" id="password" class="form-control" required>
+                                <label for="password" class="form-label fw-semibold text-[#002d62]">Hasło</label>
+                                <input type="password" name="password" id="password" class="form-control border border-[#002d62]" required>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="role" class="form-label">Rola</label>
-                                <select name="role" id="role" class="form-select" required>
+                            <div class="mb-4">
+                                <label for="role" class="form-label fw-semibold text-[#002d62]">Rola</label>
+                                <select name="role" id="role" class="form-select border border-[#002d62]" required>
                                     <option value="user">Użytkownik</option>
                                     <option value="admin">Administrator</option>
                                 </select>
                             </div>
 
-                            <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex justify-content-between">
                                 <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">
                                     <i class="bi bi-arrow-left"></i> Wróć
                                 </a>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn" style="background-color: #002d62; color: white;">
                                     <i class="bi bi-save"></i> Zapisz
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>

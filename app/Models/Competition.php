@@ -14,6 +14,7 @@ class Competition extends Model
         'start_date',
         'end_date',
         'student_id',
+        'registration_deadline',
     ];
 
     public function student() {

@@ -9,28 +9,37 @@ use App\Models\User;
 class AdminController extends Controller
 {
     public function index(Request $request)
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
 
-        $search = $request->input('search');
+    if (!$user || $user->role !== 'admin') {
+        abort(403, 'Brak dostępu - tylko dla administratorów.');
+    }
 
-        if (!$user || $user->role !== 'admin') {
-            abort(403, 'Brak dostępu - tylko dla administratorów.');
-        }
+    $search = $request->input('search');
+    $sort = $request->input('sort', 'name'); // domyślnie sortujemy po imieniu
+    $direction = $request->input('direction', 'asc');
 
-        $users = User::all();
+    // Lista dozwolonych kolumn do sortowania – dla bezpieczeństwa
+    $allowedSorts = ['name', 'last_name', 'email', 'role'];
+    if (!in_array($sort, $allowedSorts)) {
+        $sort = 'name';
+    }
 
-        $users = User::query()
+    $users = User::query()
         ->when($search, function ($query, $search) {
             $query->where('name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                ->orWhere('last_name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%");
         })
+        ->orderBy($sort, $direction)
         ->paginate(10)
-        ->withQueryString();
-        
-        return view('admin.dashboard', compact('users'));
-    }
+        ->withQueryString(); // zachowaj sort/search w URL przy paginacji
+
+    return view('admin.dashboard', compact('users'));
+}
+
+
     public function create()
     {
         return view('admin.create');

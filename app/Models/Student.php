@@ -18,4 +18,9 @@ class Student extends Model
     public function competitions() {
         return $this->hasMany(Competition::class);
     }
+    public function competitionRegistrations()
+    {
+        return $this->hasMany(CompetitionRegistration::class);
+    }
+
 }

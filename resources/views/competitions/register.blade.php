@@ -10,6 +10,11 @@
       <form method="POST" action="{{ route('competitions.registerStudents', $competition) }}">
         @csrf
 
+        {{-- Szkoła --}}
+            <div class="mb-2">
+              <label class="block text-sm font-medium">Szkoła</label>
+              <input type="text" name="school" class="form-input w-full" required>
+            </div>
         <div id="students-wrapper">
           <div class="student-item mb-4 border p-4 rounded">
             {{-- Imię --}}
@@ -26,11 +31,6 @@
             <div class="mb-2">
               <label class="block text-sm font-medium">Klasa</label>
               <input type="text" name="students[0][class]" class="form-input w-full" required>
-            </div>
-            {{-- Szkoła --}}
-            <div class="mb-2">
-              <label class="block text-sm font-medium">Szkoła</label>
-              <input type="text" name="students[0][school]" class="form-input w-full" required>
             </div>
           </div>
         </div>
