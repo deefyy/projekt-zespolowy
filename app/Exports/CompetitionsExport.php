@@ -7,9 +7,10 @@ use App\Models\Registration;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Illuminate\Support\Facades\Auth;
 
-class CompetitionsExport implements FromCollection, WithHeadings, WithMapping
+class CompetitionsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
 {
     protected Competition $competition;
     protected $user;
@@ -34,24 +35,20 @@ class CompetitionsExport implements FromCollection, WithHeadings, WithMapping
     public function map($registration): array
     {
         return [
-            $registration->student->email ?? 'Brak',
-            $this->competition->name,
-            $registration->id,
-            $registration->student->name ?? 'N/A',
-            $registration->user->name ?? 'N/A',
-            $registration->created_at->format('Y-m-d H:i:s'),
+            $registration->student->name ?? 'Brak',
+            $registration->student->last_name ?? 'Brak',
+            $registration->student->class ?? 'Brak',
+            $registration->student->school ?? 'Brak',
         ];
     }
 
     public function headings(): array
     {
         return [
-            'Competition Name',
-            'Registration ID',
-            'Student Name',
-            'Student Email',
-            'Registered By (User)',
-            'Registration Date',
+            'Imię',
+            'Nazwisko',
+            'Klasa',
+            'Szkoła',
         ];
     }
 }

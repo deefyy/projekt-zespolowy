@@ -6,11 +6,9 @@ use App\Http\Controllers\CompetitionController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
 
-Route::get('/dashboard', [DashboardController::class, 'index']) ->middleware(['auth', 'verified']) ->name('dashboard');
+
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -28,9 +26,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/competitions', [CompetitionController::class, 'index'])->name('competitions.index');
     Route::get('/competitions/create', [CompetitionController::class, 'create'])->name('competitions.create');
-    Route::get('/competitions/{competition}', [CompetitionController::class, 'show'])->name('competitions.show');
     Route::get('competitions/{competition}/edit', [CompetitionController::class, 'edit'])->name('competitions.edit');
     Route::get('competitions/{competition}/export-registrations', [CompetitionController::class, 'exportRegistrations'])->name('competitions.exportRegistrations');
     Route::put('competitions/{competition}', [CompetitionController::class, 'update'])->name('competitions.update');
@@ -41,6 +37,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/students/{student}/edit', [CompetitionController::class, 'editStudent'])->name('students.edit');
     Route::put('/students/{student}', [CompetitionController::class, 'updateStudent'])->name('students.update');
     Route::delete('/students/{student}', [CompetitionController::class, 'deleteStudent'])->name('students.destroy');
+
 });
+
+Route::get('/', [DashboardController::class, 'index'])->name('home');
+Route::get('/competitions', [CompetitionController::class, 'index'])->name('competitions.index');
+Route::get('/competitions/{competition}', [CompetitionController::class, 'show'])->name('competitions.show');
+Route::get('/dashboard', [DashboardController::class, 'index']) ->middleware(['auth', 'verified']) ->name('dashboard');
 
 require __DIR__.'/auth.php';

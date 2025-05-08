@@ -19,7 +19,10 @@ class CompetitionController extends Controller
     }
 
     public function show(Competition $competition)
-    {
+{
+    $userRegistrations = collect(); // domyślnie pusto
+
+    if (auth()->check()) {
         if (auth()->user()->role === 'admin') {
             $userRegistrations = $competition->registrations()->with('student')->get();
         } else {
@@ -28,10 +31,11 @@ class CompetitionController extends Controller
                 ->with('student')
                 ->get();
         }
-        
-
-        return view('competitions.show', compact('competition', 'userRegistrations'));
     }
+
+    return view('competitions.show', compact('competition', 'userRegistrations'));
+}
+
 
 
     public function create()
@@ -40,6 +44,7 @@ class CompetitionController extends Controller
         return view('competitions.create', compact('students'));
     }
 
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -47,7 +52,6 @@ class CompetitionController extends Controller
             'description' => 'required|string',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'student_id' => 'exists:students,id',
             'registration_deadline' => 'required|date|before_or_equal:start_date',
         ]);
 
