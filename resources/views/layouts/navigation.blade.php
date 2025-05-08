@@ -18,6 +18,9 @@
                     <x-nav-link :href="route('competitions.index')" :active="request()->routeIs('competitions.*')" class="text-white hover:text-blue-300">
                         {{ __('Konkursy') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('forums.index')" :active="request()->routeIs('forums.*')" class="text-white hover:text-blue-300">
+                        {{ __('Forum') }}
+                    </x-nav-link>
                 </div>
             </div>
 

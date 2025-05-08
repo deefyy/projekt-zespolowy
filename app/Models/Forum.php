@@ -3,6 +3,7 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ForumComment;
 
 class Forum extends Model
 {
@@ -17,5 +18,10 @@ class Forum extends Model
 
     public function competition() {
         return $this->belongsTo(Competition::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(ForumComment::class);
     }
 }

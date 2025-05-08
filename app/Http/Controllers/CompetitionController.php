@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Competition;
 use App\Models\Student;
 use App\Models\CompetitionRegistration;
+use App\Models\Forum;
+use App\Notifications\CompetitionCreatedNotification;
 
 class CompetitionController extends Controller
 {
@@ -48,9 +50,19 @@ class CompetitionController extends Controller
             'registration_deadline' => 'required|date|before_or_equal:start_date',
         ]);
 
-        Competition::create($validated);
+        $validated['user_id'] = $request->user()->id;
 
-        
+        $competition = Competition::create($validated);
+
+        Forum::create([
+            'topic'          => $competition->name,
+            'added_date'     => now(),
+            'description'    => $competition->description,
+            'competition_id' => $competition->id,
+        ]);
+
+
+        auth()->user()->notify(new CompetitionCreatedNotification($competition));
 
         return redirect()->route('competitions.index')->with('success', 'Konkurs został dodany!');
     }

@@ -13,12 +13,12 @@ class Competition extends Model
         'description',
         'start_date',
         'end_date',
-        'student_id',
+        'user_id',
         'registration_deadline',
     ];
 
-    public function student() {
-        return $this->belongsTo(Student::class);
+    public function user() {
+        return $this->belongsTo(User::class);
     }
 
     public function managers() {

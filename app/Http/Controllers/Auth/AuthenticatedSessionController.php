@@ -34,6 +34,11 @@ class AuthenticatedSessionController extends Controller
     
         $user = \App\Models\User::where('email', $request->email)->first();
     
+        if (! $user) {
+            return back()->withErrors([
+                'email' => 'Invalid credentials',
+            ]);
+        }
         session(['email' => $user->email]);
 
         if ($user && $user->two_factor_confirmed_at) {
