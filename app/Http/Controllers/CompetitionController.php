@@ -7,6 +7,9 @@ use App\Models\Competition;
 use App\Models\Student;
 use App\Models\CompetitionRegistration;
 
+use App\Exports\CompetitionsExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 class CompetitionController extends Controller
 {
     public function index()
@@ -196,5 +199,9 @@ class CompetitionController extends Controller
         return redirect()->back()->with('success', 'Uczeń został usunięty.');
     }
 
-    
+    public function exportRegistrations(Competition $competition)
+    {
+        $fileName = 'konkurs_' . $competition->slug . '.xlsx';
+        return Excel::download(new CompetitionsExport($competition), $fileName);
+    }
 }

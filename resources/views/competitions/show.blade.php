@@ -24,22 +24,23 @@
 
       {{-- przycisk rejestracji --}}
       @if(now()->lessThanOrEqualTo($competition->registration_deadline))
+      <div class="mt-1 flex gap-2">
         <a href="{{ route('competitions.showRegisterForm', $competition) }}"
            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
           Zarejestruj uczniów
         </a>
+      </div>
       @else
         <p class="text-red-600 font-semibold">Rejestracja została zakończona.</p>
       @endif
 
       {{-- przyciski admina --}}
       @if(auth()->user()?->role === 'admin')
-        <div class="mt-4 flex gap-2">
+        <div class="mt-2 flex gap-2">
           <a href="{{ route('competitions.edit', $competition) }}"
              class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
             Edytuj konkurs
           </a>
-
           <form action="{{ route('competitions.destroy', $competition) }}" method="POST"
                 onsubmit="return confirm('Czy na pewno chcesz usunąć ten konkurs?');">
             @csrf
@@ -48,6 +49,10 @@
               Usuń konkurs
             </button>
           </form>
+          <a href="{{ route('competitions.exportRegistrations', $competition) }}"
+             class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">
+            Eksportuj do Excela
+          </a>
         </div>
       @endif
 
