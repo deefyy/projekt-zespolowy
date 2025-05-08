@@ -4,10 +4,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CompetitionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ForumCommentController;
+use App\Http\Controllers\ForumController;
 use Illuminate\Support\Facades\Route;
-
-
-
 
 
 Route::middleware('auth')->group(function () {
@@ -38,6 +37,16 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/students/{student}', [CompetitionController::class, 'updateStudent'])->name('students.update');
     Route::delete('/students/{student}', [CompetitionController::class, 'deleteStudent'])->name('students.destroy');
 
+    // Trasy forum (postów)
+    Route::get('/forums', [ForumController::class, 'index'])->name('forums.index');
+    Route::get('/forums/{forum}', [ForumController::class, 'show'])->name('forums.show');
+    // (opcjonalnie, jeśli autor konkursu może tworzyć nowe wątki forum: Route::get('/forums/create'), Route::post('/forums'), itp.)
+
+    // Trasy dla komentarzy na forum (zagnieżdżone w ramach konkretnego posta forum)
+    Route::post('/forums/{forum}/comments', [ForumCommentController::class, 'store'])
+         ->name('forums.comments.store');
+    Route::put('/forums/{forum}/comments/{comment}', [ForumCommentController::class, 'update'])
+         ->name('forums.comments.update');
 });
 
 Route::get('/', [DashboardController::class, 'index'])->name('home');
