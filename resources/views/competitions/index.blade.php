@@ -1,25 +1,27 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Lista konkursów
-        </h2>
+        <div class="bg-[#002d62] text-white py-5">
+            <h2 class="font-bold text-2xl text-center">
+                Lista Konkursów
+            </h2>
+        </div>
     </x-slot>
 
-    <div class="py-6">
+    <div class="py-10">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             {{-- Tylko dla admina --}}
             @if(auth()->user() && auth()->user()->role === 'admin')
-                <a href="{{ route('competitions.create') }}" class="bg-blue-500 text-white px-4 py-2 rounded mb-4 inline-block">
-                    Dodaj nowy konkurs
+                <a href="{{ route('competitions.create') }}" class="bg-[#002d62] text-white px-5 py-3 rounded-lg mb-6 inline-block hover:bg-[#001b3e] transition">
+                    ➕ Dodaj nowy konkurs
                 </a>
             @endif
 
             @foreach ($competitions as $competition)
-                <a href="{{ route('competitions.show', $competition) }}" class="block bg-white shadow-sm rounded-lg p-4 mb-4 hover:bg-gray-50 transition">
-                    <h3 class="text-lg font-bold">{{ $competition->name }}</h3>
-                    <p class="text-gray-700">{{ $competition->description }}</p>
-                    <p class="text-sm text-gray-500">
-                        Od: {{ $competition->start_date }} do: {{ $competition->end_date }}
+                <a href="{{ route('competitions.show', $competition) }}" class="block bg-white shadow-lg rounded-lg p-5 mb-4 hover:shadow-xl transition">
+                    <h3 class="text-xl font-bold text-[#002d62] mb-2">{{ $competition->name }}</h3>
+                    <p class="text-gray-700 mb-3">{{ $competition->description }}</p>
+                    <p class="text-sm text-gray-500 mb-1">
+                        📅 Od: {{ $competition->start_date }} do: {{ $competition->end_date }}
                     </p>
                 </a>
             @endforeach

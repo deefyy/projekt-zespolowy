@@ -6,11 +6,8 @@ use App\Http\Controllers\CompetitionController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
 
-Route::get('/dashboard', [DashboardController::class, 'index']) ->middleware(['auth', 'verified']) ->name('dashboard');
+
 
 
 Route::middleware('auth')->group(function () {
@@ -29,9 +26,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/competitions', [CompetitionController::class, 'index'])->name('competitions.index');
     Route::get('/competitions/create', [CompetitionController::class, 'create'])->name('competitions.create');
-    Route::get('/competitions/{competition}', [CompetitionController::class, 'show'])->name('competitions.show');
     Route::get('competitions/{competition}/edit', [CompetitionController::class, 'edit'])->name('competitions.edit');
     Route::put('competitions/{competition}', [CompetitionController::class, 'update'])->name('competitions.update');
     Route::delete('competitions/{competition}', [CompetitionController::class, 'destroy'])->name('competitions.destroy');
@@ -42,8 +37,11 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/students/{student}', [CompetitionController::class, 'updateStudent'])->name('students.update');
     Route::delete('/students/{student}', [CompetitionController::class, 'deleteStudent'])->name('students.destroy');
 
-
 });
 
+Route::get('/', [DashboardController::class, 'index'])->name('home');
+Route::get('/competitions', [CompetitionController::class, 'index'])->name('competitions.index');
+Route::get('/competitions/{competition}', [CompetitionController::class, 'show'])->name('competitions.show');
+Route::get('/dashboard', [DashboardController::class, 'index']) ->middleware(['auth', 'verified']) ->name('dashboard');
 
 require __DIR__.'/auth.php';

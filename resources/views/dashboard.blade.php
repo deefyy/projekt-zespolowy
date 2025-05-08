@@ -1,6 +1,13 @@
 <x-app-layout>
+
+{{-- Nagłówek strony --}}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+    <h2 class="text-2xl font-bold">Strona główna</h2>
+</div>
+
 <div class="py-6">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
         {{-- Sekcja najbliższych konkursów --}}
         <div class="bg-white p-6 rounded shadow mb-6">
             <h3 class="text-xl font-bold mb-4">Najbliższe konkursy</h3>
@@ -42,23 +49,36 @@
         const calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
             locale: 'pl',
-            events: @json($calendarEvents),
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
                 right: 'dayGridMonth,listWeek'
-            }
+            },
+            events: [
+                {
+                    title: 'Testowy Event',
+                    start: '2025-05-10',
+                    end: '2025-05-12',
+                    url: '#'
+                },
+                ...@json($calendarEvents)
+            ]
         });
 
         calendar.render();
     });
 </script>
 
+
 {{-- Styl kalendarza --}}
 <style>
     #calendar {
         max-width: 100%;
         margin: 0 auto;
+    }
+    .fc-daygrid-event {
+        background-color: #002d62 !important;
+        color: #ffffff !important;
     }
 </style>
 
