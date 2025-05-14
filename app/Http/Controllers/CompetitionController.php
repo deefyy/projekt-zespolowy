@@ -112,24 +112,46 @@ class CompetitionController extends Controller
     $competition->update($validated);
 
     // 🔍 **Pobranie aktualnej liczby etapów**
-    $currentStages = $competition->stages()->count();
+    $currentStages  = $competition->stages()->count();
     $newStagesCount = $validated['stages_count'];
 
-    // 🔄 **Aktualizacja ilości etapów**
     if ($newStagesCount > $currentStages) {
         // Dodawanie brakujących etapów
         for ($i = $currentStages + 1; $i <= $newStagesCount; $i++) {
-            \App\Models\Stage::create([
-                'stage'            => $i,
+            $newStage = Stage::create([
+                'stage'           => $i,
                 'date'            => now()->addWeeks($i),
                 'competition_id'  => $competition->id,
             ]);
+
+            // ► DODAJ dla każdego ucznia rekord stages_competition
+            $competition->registrations->each(function($reg) use($competition, $newStage) {
+                StageCompetition::create([
+                    'competition_id' => $competition->id,
+                    'stage_id'       => $newStage->id,
+                    'student_id'     => $reg->student_id,
+                    'result'         => null,
+                ]);
+            });
         }
-    } elseif ($newStagesCount < $currentStages) {
-        // Usuwanie nadmiarowych etapów
+    }
+    elseif ($newStagesCount < $currentStages) {
+        // Oblicz, które etapy usuwamy
+        $toDeleteNumbers = range($newStagesCount + 1, $currentStages);
+
+        // Pobierz ID etapów do usunięcia
+        $stagesToDelete = $competition->stages()
+            ->whereIn('stage', $toDeleteNumbers)
+            ->pluck('id');
+
+        // Usuń wpisy pivot
+        StageCompetition::where('competition_id', $competition->id)
+            ->whereIn('stage_id', $stagesToDelete)
+            ->delete();
+
+        // Usuń same etapy
         $competition->stages()
-            ->orderByDesc('id')
-            ->take($currentStages - $newStagesCount)
+            ->whereIn('id', $stagesToDelete)
             ->delete();
     }
 
