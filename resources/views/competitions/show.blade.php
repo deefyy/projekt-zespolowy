@@ -87,7 +87,9 @@
 
                                       {{-- dynamiczne kolumny etapów --}}
                                       @foreach($competition->stages as $stage)
-                                          <th class="text-center px-4 py-2 border-b">{{ $stage->name }}</th>
+                                        <th class="text-center px-4 py-2 border-b">
+                                          Etap {{ $stage->stage }}
+                                        </th>
                                       @endforeach
 
                                       <th class="text-left px-4 py-2 border-b">Akcje</th>
@@ -112,11 +114,14 @@
                                               <td class="px-4 py-2 border-b">{{ $reg->student->class }}</td>
                                               <td class="px-4 py-2 border-b">{{ $reg->student->school }}</td>
 
-                                              {{-- dynamiczne komórki dla wyników etapów --}}
                                               @foreach($competition->stages as $stage)
-                                                  <td class="px-4 py-2 border-b text-center">
-                                                      {{ $stage->result ?? '-' }}
-                                                  </td>
+                                                @php
+                                                  // znajdź rekord pivot dla tego ucznia & etapu
+                                                  $sc = $reg->student->stageCompetitions->first(fn($sc) => $sc->stage_id === $stage->id);
+                                                @endphp
+                                                <td class="px-4 py-2 border-b text-center">
+                                                  {{ $sc->result ?? '-' }}
+                                                </td>
                                               @endforeach
 
                                               <td class="px-4 py-2 border-b">

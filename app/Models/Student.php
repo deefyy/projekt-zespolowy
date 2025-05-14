@@ -30,5 +30,8 @@ class Student extends Model
     {
         return $this->hasMany(CompetitionRegistration::class);
     }
-
+    public function stageCompetitions()
+{
+    return $this->hasMany(\App\Models\StageCompetition::class, 'student_id');
+}
 }

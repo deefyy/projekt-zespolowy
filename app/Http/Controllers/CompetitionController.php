@@ -32,7 +32,7 @@ class CompetitionController extends Controller
             } else {
                 $userRegistrations = $competition->registrations()
                     ->where('user_id', auth()->id())
-                    ->with('student')
+                    ->with(['student.stageCompetitions'])
                     ->get();
             }
         }
@@ -186,16 +186,17 @@ class CompetitionController extends Controller
                 'user_id'        => auth()->id(),
                 'student_id'     => $student->id,
             ]);
-        }
-
-        foreach ($competition->stages as $stage) {
+            foreach ($competition->stages as $stage) {
             StageCompetition::create([
                 'competition_id' => $competition->id,
                 'stage_id'       => $stage->id,
                 'student_id'     => $student->id,
                 'result'         => null,   // lub '' albo 'pending'
             ]);
+            }
         }
+
+
 
         if (now()->greaterThan($competition->registration_deadline)) {
             return redirect()->back()->with('error', 'Termin rejestracji minął.');

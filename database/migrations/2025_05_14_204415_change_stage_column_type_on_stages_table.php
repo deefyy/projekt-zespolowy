@@ -6,23 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+
     public function up(): void
     {
         Schema::table('stages', function (Blueprint $table) {
-            $table->unsignedBigInteger('stage')->change();
+            $table->dropColumn('stage');
+        });
+
+        Schema::table('stages', function (Blueprint $table) {
+            $table->unsignedBigInteger('stage')->after('date');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('stages', function (Blueprint $table) {
-            $table->string('stage')->change();
+            $table->dropColumn('stage');
+        });
+
+        Schema::table('stages', function (Blueprint $table) {
+            $table->string('stage')->after('date');
         });
     }
 };
