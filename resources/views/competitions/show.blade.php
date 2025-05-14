@@ -7,9 +7,16 @@
     <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 bg-white p-6 shadow rounded">
       {{-- dane konkursu --}}
       <h1 class="text-2xl font-bold mb-2">{{ $competition->name }}</h1>
-      <p class="text-gray-700 mb-4">{{ $competition->description }}</p>
-      <p class="text-sm text-gray-500 mb-2">Od: {{ $competition->start_date }} do: {{ $competition->end_date }}</p>
-      <p class="text-sm text-gray-500 mb-4">Zapisy do: {{ $competition->registration_deadline }}</p>
+      <p class="text-gray-700 mb-2">{{ $competition->description }}</p>
+      <p class="text-sm text-gray-500 mb-2">
+        Liczba etapów: {{ $competition->stages_count }}
+      </p>
+      <p class="text-sm text-gray-500 mb-2">
+        Od: {{ $competition->start_date }} do: {{ $competition->end_date }}
+      </p>
+      <p class="text-sm text-gray-500 mb-4">
+        Zapisy do: {{ $competition->registration_deadline }}
+      </p>
 
       {{-- komunikaty --}}
       @if(session('success'))
@@ -61,67 +68,82 @@
           </a>
         </div>
       @endif
+    
 
       {{-- tabela z uczniami --}}
-      @auth
-        @if($userRegistrations->count() > 0)
-          <div class="mt-8">
-            <h3 class="text-lg font-semibold mb-4">Twoi zapisani uczniowie:</h3>
+          @auth
+              @if($userRegistrations->count() > 0)
+                  <div class="mt-8">
+                      <h3 class="text-lg font-semibold mb-4">Twoi zapisani uczniowie:</h3>
 
-            <div class="overflow-x-auto">
-              <table class="min-w-full bg-white border border-gray-200 rounded">
-                <thead class="bg-gray-100">
-                  <tr>
-                    <th class="text-left px-4 py-2 border-b">Imię</th>
-                    <th class="text-left px-4 py-2 border-b">Nazwisko</th>
-                    <th class="text-left px-4 py-2 border-b">Klasa</th>
-                    <th class="text-left px-4 py-2 border-b">Szkoła</th>
-                    <th class="text-left px-4 py-2 border-b">Akcje</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @php
-                    $registrationStillOpen = now()->lessThanOrEqualTo($competition->registration_deadline);
-                    $isAdmin = auth()->user()?->role === 'admin';
-                  @endphp
+                      <div class="overflow-x-auto">
+                          <table class="min-w-full bg-white border border-gray-200 rounded">
+                              <thead class="bg-gray-100">
+                                  <tr>
+                                      <th class="text-left px-4 py-2 border-b">Imię</th>
+                                      <th class="text-left px-4 py-2 border-b">Nazwisko</th>
+                                      <th class="text-left px-4 py-2 border-b">Klasa</th>
+                                      <th class="text-left px-4 py-2 border-b">Szkoła</th>
 
-                  @foreach($userRegistrations as $reg)
-                    @if($reg->student)
-                      @php
-                        $canEditOrDelete = $isAdmin || (
-                          $reg->user_id === auth()->id() && $registrationStillOpen
-                        );
-                      @endphp
-                      <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-2 border-b">{{ $reg->student->name }}</td>
-                        <td class="px-4 py-2 border-b">{{ $reg->student->last_name }}</td>
-                        <td class="px-4 py-2 border-b">{{ $reg->student->class }}</td>
-                        <td class="px-4 py-2 border-b">{{ $reg->student->school }}</td>
-                        <td class="px-4 py-2 border-b">
-                          @if($canEditOrDelete)
-                            <a href="{{ route('students.edit', $reg->student->id) }}"
-                               class="text-blue-500 hover:underline mr-2">Edytuj</a>
+                                      {{-- dynamiczne kolumny etapów --}}
+                                      @foreach($competition->stages as $stage)
+                                          <th class="text-center px-4 py-2 border-b">{{ $stage->name }}</th>
+                                      @endforeach
 
-                            <form action="{{ route('students.destroy', $reg->student->id) }}"
-                                  method="POST" class="inline-block"
-                                  onsubmit="return confirm('Na pewno chcesz usunąć ucznia?');">
-                              @csrf
-                              @method('DELETE')
-                              <button type="submit" class="text-red-500 hover:underline">Usuń</button>
-                            </form>
-                          @else
-                            <span class="text-gray-400 italic">Brak dostępu</span>
-                          @endif
-                        </td>
-                      </tr>
-                    @endif
-                  @endforeach
-                </tbody>
-              </table>
-            </div>
-          </div>
-        @endif
-      @endauth
+                                      <th class="text-left px-4 py-2 border-b">Akcje</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  @php
+                                      $registrationStillOpen = now()->lessThanOrEqualTo($competition->registration_deadline);
+                                      $isAdmin = auth()->user()?->role === 'admin';
+                                  @endphp
+
+                                  @foreach($userRegistrations as $reg)
+                                      @if($reg->student)
+                                          @php
+                                              $canEditOrDelete = $isAdmin || (
+                                                  $reg->user_id === auth()->id() && $registrationStillOpen
+                                              );
+                                          @endphp
+                                          <tr class="hover:bg-gray-50">
+                                              <td class="px-4 py-2 border-b">{{ $reg->student->name }}</td>
+                                              <td class="px-4 py-2 border-b">{{ $reg->student->last_name }}</td>
+                                              <td class="px-4 py-2 border-b">{{ $reg->student->class }}</td>
+                                              <td class="px-4 py-2 border-b">{{ $reg->student->school }}</td>
+
+                                              {{-- dynamiczne komórki dla wyników etapów --}}
+                                              @foreach($competition->stages as $stage)
+                                                  <td class="px-4 py-2 border-b text-center">
+                                                      {{ $stage->result ?? '-' }}
+                                                  </td>
+                                              @endforeach
+
+                                              <td class="px-4 py-2 border-b">
+                                                  @if($canEditOrDelete)
+                                                      <a href="{{ route('students.edit', $reg->student->id) }}"
+                                                        class="text-blue-500 hover:underline mr-2">Edytuj</a>
+
+                                                      <form action="{{ route('students.destroy', $reg->student->id) }}"
+                                                            method="POST" class="inline-block"
+                                                            onsubmit="return confirm('Na pewno chcesz usunąć ucznia?');">
+                                                          @csrf
+                                                          @method('DELETE')
+                                                          <button type="submit" class="text-red-500 hover:underline">Usuń</button>
+                                                      </form>
+                                                  @else
+                                                      <span class="text-gray-400 italic">Brak dostępu</span>
+                                                  @endif
+                                              </td>
+                                          </tr>
+                                      @endif
+                                  @endforeach
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
+              @endif
+          @endauth
 
       {{-- powrót --}}
       <a href="{{ route('competitions.index') }}"

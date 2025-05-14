@@ -15,6 +15,21 @@
               <label class="block text-sm font-medium">Szkoła</label>
               <input type="text" name="school" class="form-input w-full" required>
             </div>
+        {{-- Nauczyciel --}}
+            <div class="mb-2">
+              <label class="block text-sm font-medium">Nauczyciel</label>
+              <input type="text" name="teacher" class="form-input w-full">
+            </div>
+          {{-- Opiekun --}}
+          <div class="mb-2">
+            <label class="block text-sm font-medium">Opiekun</label>
+            <input type="text" name="guardian" class="form-input w-full">
+          </div>
+          {{-- Kontakt --}}
+            <div class="mb-2">
+              <label class="block text-sm font-medium">Kontakt (e-mail lub tel.)</label>
+              <input type="text" name="contact" class="form-input w-full" required>
+            </div>
         <div id="students-wrapper">
           <div class="student-item mb-4 border p-4 rounded">
             {{-- Imię --}}
@@ -32,6 +47,17 @@
               <label class="block text-sm font-medium">Klasa</label>
               <input type="text" name="students[0][class]" class="form-input w-full" required>
             </div>
+
+            {{-- Zgoda RODO --}}
+            <div class="mb-2 flex items-center space-x-2">
+              <input type="checkbox"
+                    name="students[0][statement]"
+                    value="1"
+                    class="form-checkbox"
+                    required>
+              <span class="text-sm">Wyrażam zgodę na przetwarzanie danych osobowych</span>
+            </div>
+
           </div>
         </div>
 
@@ -53,17 +79,26 @@
   </div>
 
   <script>
-    let idx = 1;
-    document.getElementById('add-student').addEventListener('click', () => {
-      const wrapper = document.getElementById('students-wrapper');
-      const item = document.querySelector('.student-item').cloneNode(true);
-      item.querySelectorAll('input').forEach(input => {
-        const name = input.getAttribute('name').replace(/\d+/, idx);
-        input.setAttribute('name', name);
+  let idx = 1;
+  document.getElementById('add-student').addEventListener('click', () => {
+    const wrapper = document.getElementById('students-wrapper');
+    const prototype = document.querySelector('.student-item');
+    const item = prototype.cloneNode(true);
+
+    item.querySelectorAll('input').forEach(input => {
+      if (input.name.startsWith('students[')) {
+        input.name = input.name.replace(/\d+/, idx);
+      }
+      if (input.type === 'checkbox') {
+        input.checked = false;
+      } else {
         input.value = '';
-      });
-      wrapper.appendChild(item);
-      idx++;
+      }
     });
+
+    wrapper.appendChild(item);
+    idx++;
+  });
   </script>
+
 </x-app-layout>

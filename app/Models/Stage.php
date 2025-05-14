@@ -12,6 +12,7 @@ class Stage extends Model
         'name',
         'date',
         'competition_id',
+        'result',
     ];
 
     public function competition() {

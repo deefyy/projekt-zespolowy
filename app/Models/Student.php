@@ -14,6 +14,14 @@ class Student extends Model
         'last_name',
         'class',
         'school',
+        'teacher',
+        'guardian',
+        'contact',
+        'statement',
+    ];
+
+    protected $casts = [
+        'statement' => 'boolean',
     ];
     public function competitions() {
         return $this->hasMany(Competition::class);
