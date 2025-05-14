@@ -14,6 +14,7 @@ class Competition extends Model
         'start_date',
         'end_date',
         'user_id',
+        'stages_count',
         'registration_deadline',
     ];
 

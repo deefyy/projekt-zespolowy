@@ -14,6 +14,14 @@ class Student extends Model
         'last_name',
         'class',
         'school',
+        'teacher',
+        'guardian',
+        'contact',
+        'statement',
+    ];
+
+    protected $casts = [
+        'statement' => 'boolean',
     ];
     public function competitions() {
         return $this->hasMany(Competition::class);
@@ -22,5 +30,8 @@ class Student extends Model
     {
         return $this->hasMany(CompetitionRegistration::class);
     }
-
+    public function stageCompetitions()
+    {
+        return $this->hasMany(\App\Models\StageCompetition::class, 'student_id');
+    }
 }
