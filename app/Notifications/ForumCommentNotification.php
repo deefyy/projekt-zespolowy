@@ -42,9 +42,10 @@ class ForumCommentNotification extends Notification
                     ->greeting('Witaj,')
                     ->line('W konkursie "' . $competition->name . '" pojawił się nowy komentarz.')
                     ->line('Treść komentarza: "' . $this->comment->content . '"')
-                    ->line('Autor komentarza: ' . $author->name)
+                    ->line('Autor komentarza: ' . $author->name .' '. $author->last_name)
                     ->action('Zobacz dyskusję', url(route('forums.show', $forum)))
-                    ->line('Dostałeś to powiadomienie, ponieważ dodałeś ucznia do tego konkursu.');
+                    ->line('Dostałeś to powiadomienie, ponieważ dodałeś ucznia do tego konkursu.')
+                    ->salutation('Pozdrawiamy, Zespół Konkursu');
     }
 
     // (Opcjonalnie można dodać toArray dla powiadomień w bazie, jeśli są wykorzystywane)
