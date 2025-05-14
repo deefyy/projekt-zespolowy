@@ -6,11 +6,10 @@ use App\Models\Competition;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\WithSort;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Illuminate\Support\Facades\Auth;
 
-class CompetitionsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithSort
+class CompetitionsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
 {
     protected Competition $competition;
     protected $user;
