@@ -9,10 +9,9 @@ class Stage extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
+        'stage',
         'date',
         'competition_id',
-        'result',
     ];
 
     public function competition() {

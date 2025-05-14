@@ -8,6 +8,7 @@ use App\Models\Stage;
 use App\Models\Student;
 use App\Models\CompetitionRegistration;
 use App\Models\Forum;
+use App\Models\StageCompetition;
 use App\Notifications\CompetitionCreatedNotification;
 
 use App\Exports\CompetitionsExport;
@@ -63,10 +64,9 @@ class CompetitionController extends Controller
         // Dodawanie etapów na podstawie 'stages_count'
         for ($i = 1; $i <= $validated['stages_count']; $i++) {
             Stage::create([
-                'name'            => "Etap $i",
+                'stage'            => $i,
                 'date'            => now()->addWeeks($i),
                 'competition_id'  => $competition->id,
-                'result'          => null // Puste pole, możesz potem zaktualizować wyniki
             ]);
         }
 
@@ -120,10 +120,9 @@ class CompetitionController extends Controller
         // Dodawanie brakujących etapów
         for ($i = $currentStages + 1; $i <= $newStagesCount; $i++) {
             \App\Models\Stage::create([
-                'name'            => "Etap $i",
+                'stage'            => $i,
                 'date'            => now()->addWeeks($i),
                 'competition_id'  => $competition->id,
-                'result'          => null
             ]);
         }
     } elseif ($newStagesCount < $currentStages) {
@@ -186,6 +185,15 @@ class CompetitionController extends Controller
                 'competition_id' => $competition->id,
                 'user_id'        => auth()->id(),
                 'student_id'     => $student->id,
+            ]);
+        }
+
+        foreach ($competition->stages as $stage) {
+            StageCompetition::create([
+                'competition_id' => $competition->id,
+                'stage_id'       => $stage->id,
+                'student_id'     => $student->id,
+                'result'         => null,   // lub '' albo 'pending'
             ]);
         }
 
