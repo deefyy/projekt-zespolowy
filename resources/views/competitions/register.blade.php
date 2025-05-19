@@ -15,6 +15,11 @@
               <label class="block text-sm font-medium">Szkoła</label>
               <input type="text" name="school" class="form-input w-full" required>
             </div>
+        {{-- Adres Szkoły --}}
+            <div class="mb-2">
+              <label class="block text-sm font-medium">Adres szkoły</label>
+              <input type="text" name="school_address" class="form-input w-full" required>
+            </div>
         {{-- Nauczyciel --}}
             <div class="mb-2">
               <label class="block text-sm font-medium">Nauczyciel</label>

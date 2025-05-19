@@ -181,6 +181,7 @@ class CompetitionController extends Controller
     {
         $data = $request->validate([
             'school'               => 'required|string',
+            'school_address'       => 'nullable|string',
             'teacher'              => 'nullable|string',
             'guardian'             => 'nullable|string',
             'contact'              => 'required|string',
@@ -197,6 +198,7 @@ class CompetitionController extends Controller
                 'last_name' => $stu['last_name'],
                 'class'     => $stu['class'],
                 'school'    => $data['school'],
+                'school_address' => $data['school_address'] ?? null,
                 'teacher'   => $data['teacher'] ?? null,
                 'guardian'  => $data['guardian'] ?? null,
                 'contact'   => $data['contact'],
@@ -259,6 +261,7 @@ class CompetitionController extends Controller
             'last_name' => 'required|string',
             'class'     => 'required|string',
             'school'    => 'required|string',
+            'school_address'  => 'nullable|string',
             'contact'   => 'required|string',
             'teacher'   => 'nullable|string',
             'guardian'  => 'nullable|string',

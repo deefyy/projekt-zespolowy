@@ -62,6 +62,15 @@
                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                  required>
         </div>
+        
+        {{-- Adres Szkoły --}}
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Adres Szkoły</label>
+            <input type="text"
+                  name="school_address"
+                  value="{{ old('school_address', $student->school_address) }}"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+        </div>
 
         {{-- Nauczyciel --}}
         <div class="mb-4">

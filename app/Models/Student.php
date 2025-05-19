@@ -18,6 +18,7 @@ class Student extends Model
         'guardian',
         'contact',
         'statement',
+        'school_address',
     ];
 
     protected $casts = [
