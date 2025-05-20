@@ -49,6 +49,9 @@ Route::middleware(['auth'])->group(function () {
          ->name('forums.comments.update');
 });
 
+Route::get('/competitions/{competition}/points/edit', [CompetitionController::class, 'editPoints'])->name('competitions.points.edit');
+Route::post('/competitions/{competition}/points', [CompetitionController::class, 'updatePoints'])->name('competitions.points.update');
+
 Route::get('/', [DashboardController::class, 'index'])->name('home');
 Route::get('/competitions', [CompetitionController::class, 'index'])->name('competitions.index');
 Route::get('/competitions/{competition}', [CompetitionController::class, 'show'])->name('competitions.show');

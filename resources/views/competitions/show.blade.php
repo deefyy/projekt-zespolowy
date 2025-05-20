@@ -66,6 +66,10 @@
              class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">
             Eksportuj do Excela
           </a>
+          <a href="{{ route('competitions.points.edit', $competition) }}"
+           class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+            Zarządzaj punktami
+        </a>
         </div>
       @endif
     

@@ -172,9 +172,21 @@ class CompetitionController extends Controller
         return redirect()->route('competitions.index')->with('success', 'Konkurs został usunięty.');
     }
 
+
+    private function schoolClasses(): array
+    {
+        return [
+            '1, Szkoła postawowa','2, Szkoła postawowa','3, Szkoła postawowa',
+            '4, Szkoła postawowa','5, Szkoła postawowa','6, Szkoła postawowa',
+            '7, Szkoła postawowa','8, Szkoła postawowa',
+            '1, Szkoła średnia','2, Szkoła średnia','3, Szkoła średnia',
+            '4, Szkoła średnia','5, Szkoła średnia',
+        ];
+    }
     public function showRegistrationForm(Competition $competition)
     {
-        return view('competitions.register', compact('competition'));
+        $classes = $this->schoolClasses();
+        return view('competitions.register', compact('competition','classes'));
     }
 
     public function registerStudents(Request $request, Competition $competition)
@@ -215,7 +227,7 @@ class CompetitionController extends Controller
                 'competition_id' => $competition->id,
                 'stage_id'       => $stage->id,
                 'student_id'     => $student->id,
-                'result'         => null,   // lub '' albo 'pending'
+                'result'         => null,
             ]);
             }
         }
@@ -233,6 +245,7 @@ class CompetitionController extends Controller
 
     public function editStudent(Student $student)
     {
+        $classes = $this->schoolClasses();
         $isAdmin = auth()->user()->role === 'admin';
         $isOwner = CompetitionRegistration::where('student_id', $student->id)
             ->where('user_id', auth()->id())
@@ -242,11 +255,13 @@ class CompetitionController extends Controller
             abort(403, 'Brak dostępu');
         }
 
-        return view('competitions.students.edit', compact('student'));
+
+        return view('competitions.students.edit', compact('student', 'classes'));
     }
 
     public function updateStudent(Request $request, Student $student)
     {
+        $classes = $this->schoolClasses();
         $isAdmin = auth()->user()->role === 'admin';
         $isOwner = CompetitionRegistration::where('student_id', $student->id)
             ->where('user_id', auth()->id())
@@ -304,4 +319,55 @@ class CompetitionController extends Controller
         $fileName = 'konkurs.xlsx';
         return Excel::download(new CompetitionsExport($competition), $fileName);
     }
+    public function editPoints(Competition $competition)
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+        $studentIds = $competition->registrations()->pluck('student_id');
+        $students = Student::whereIn('id', $studentIds)->get();
+        $stages = $competition->stages()->get();
+        $points = [];
+    StageCompetition::where('competition_id', $competition->id)
+        ->get()
+        ->each(function ($rec) use (&$points) {
+            $points[$rec->student_id][$rec->stage_id] = $rec->result;
+        });
+
+        return view(
+            'competitions.points.edit',
+            compact('competition', 'students', 'stages', 'points')
+        );
+    }
+    public function updatePoints(Request $request, Competition $competition)
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        $request->validate([
+            'points.*.*' => 'nullable|integer|min:0',
+    ]);
+
+    foreach ($request->input('points', []) as $studentId => $stagePoints) {
+        foreach ($stagePoints as $stageId => $value) {
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            StageCompetition::updateOrCreate(
+                [
+                    'competition_id' => $competition->id,
+                    'student_id'     => $studentId,
+                    'stage_id'       => $stageId,
+                ],
+                [
+                    'result' => $value 
+                ]
+            );
+        }
+    }
+
+    return redirect()
+        ->route('competitions.show', $competition)
+        ->with('success', 'Punkty zostały zapisane.');
+}
+
 }
