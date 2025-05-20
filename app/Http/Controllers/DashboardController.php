@@ -3,26 +3,46 @@
 namespace App\Http\Controllers;
 
 use App\Models\Competition;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $upcomingCompetitions = Competition::where('start_date', '>=', now())
+        Carbon::setLocale('pl');
+
+        $base     = $request->query('month');           
+        $firstDay = $base
+            ? Carbon::createFromFormat('Y-m', $base)->startOfMonth()
+            : Carbon::today()->startOfMonth();
+
+        $daysInMonth = $firstDay->daysInMonth;
+        $offset      = $firstDay->dayOfWeekIso - 1;     
+
+        $upcomingCompetitions = Competition::whereDate('end_date', '>=', Carbon::today())
             ->orderBy('start_date')
-            ->take(3)
+            ->take(5)
             ->get();
 
-            $calendarEvents = Competition::all()->map(function ($competition) {
-                return [
-                    'title' => $competition->name,
-                    'start' => Carbon::parse($competition->start_date)->toDateString(),
-                    'end'   => Carbon::parse($competition->end_date)->toDateString(),
-                    'url'   => route('competitions.show', $competition),
-                ];
-            });
-            
-            return view('dashboard', compact('upcomingCompetitions', 'calendarEvents'));
+        $eventsByDay = Competition::whereMonth('start_date', $firstDay->month)
+            ->whereYear ('start_date', $firstDay->year)
+            ->get()
+            ->groupBy(fn ($c) => Carbon::parse($c->start_date)->day);  
+
+        $prevUrl = route('home', ['month' => $firstDay->copy()->subMonth()->format('Y-m')]) . '#calendar';
+        $nextUrl = route('home', ['month' => $firstDay->copy()->addMonth()->format('Y-m')]) . '#calendar';
+
+        return view('dashboard', [
+            'upcomingCompetitions' => $upcomingCompetitions,
+            'daysInMonth'  => $daysInMonth,
+            'offset'       => $offset,
+            'eventsByDay'  => $eventsByDay,
+            'monthName'    => $firstDay->isoFormat('MMMM YYYY'), 
+            'year'         => $firstDay->year,
+            'month'        => $firstDay->month,
+            'prevUrl'      => $prevUrl,
+            'nextUrl'      => $nextUrl,
+        ]);
     }
 }
