@@ -1,85 +1,123 @@
 <x-app-layout>
+    {{-- HEADER -------------------------------------------------------}}
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            Strona główna
+        </h2>
+    </x-slot>
 
-{{-- Nagłówek strony --}}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-    <h2 class="text-2xl font-bold">Strona główna</h2>
-</div>
+    {{-- PAGE ---------------------------------------------------------}}
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-<div class="py-6">
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            {{-- Najbliższe wydarzenia ----------------------------------}}
+            <section>
+                <h3 class="text-3xl font-bold text-blue-900 mb-6">Najbliższe wydarzenia</h3>
 
-        {{-- Sekcja najbliższych konkursów --}}
-        <div class="bg-white p-6 rounded shadow mb-6">
-            <h3 class="text-xl font-bold mb-4">Najbliższe konkursy</h3>
-            @if($upcomingCompetitions->count())
-                <ul class="list-disc ml-6">
-                    @foreach ($upcomingCompetitions as $competition)
-                        <li>
-                            <a href="{{ route('competitions.show', $competition) }}" class="text-blue-600 hover:underline">
-                                {{ $competition->name }}
-                            </a>
-                            <span class="text-gray-500 text-sm">
-                                ({{ \Carbon\Carbon::parse($competition->start_date)->format('d.m.Y') }})
-                            </span>
-                        </li>
-                    @endforeach
-                </ul>
-            @else
-                <p class="text-gray-600">Brak nadchodzących konkursów.</p>
-            @endif
-        </div>
+                @forelse($upcomingCompetitions as $competition)
+                    <article class="bg-white border-l-4 border-blue-900 p-5 rounded-lg shadow mb-6">
+                        <h4 class="text-2xl font-semibold text-blue-900">{{ $competition->name }}</h4>
 
-        {{-- Sekcja kalendarza --}}
-        <div class="bg-white p-6 rounded shadow">
-            <h3 class="text-xl font-bold mb-4">Kalendarz konkursów</h3>
-            <div id='calendar'></div>
+                        <p class="text-gray-600 text-sm mb-2">
+                            📅 {{ \Carbon\Carbon::parse($competition->start_date)->format('d.m.Y') }}
+                            @if($competition->end_date)
+                                – {{ \Carbon\Carbon::parse($competition->end_date)->format('d.m.Y') }}
+                            @endif
+                        </p>
+
+                        <p class="text-gray-800 mb-4">
+                            {{ \Illuminate\Support\Str::limit(strip_tags($competition->description), 100, '...') }}
+                        </p>
+
+                        <a href="{{ route('competitions.show', $competition) }}"
+                           class="inline-block bg-blue-800 hover:bg-blue-900 text-white text-sm font-medium py-2 px-4 rounded">
+                            Czytaj dalej…
+                        </a>
+                    </article>
+                @empty
+                    <p class="text-gray-700">Brak nadchodzących wydarzeń.</p>
+                @endforelse
+            </section>
+
+            {{-- Mini-kalendarz ---------------------------------------}}
+            <section id="calendar" class="mt-12">
+
+                {{-- Pasek tytułu + strzałki --}}
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-3xl font-bold text-blue-900">Kalendarz ({{ $monthName }})</h3>
+                    <div class="space-x-2">
+                        <a href="{{ $prevUrl }}" class="px-3 py-1 rounded bg-[#eaf0f6] border border-[#cdd7e4] text-blue-900 hover:bg-[#d9e4f2]">&larr;</a>
+                        <a href="{{ $nextUrl }}" class="px-3 py-1 rounded bg-[#eaf0f6] border border-[#cdd7e4] text-blue-900 hover:bg-[#d9e4f2]">&rarr;</a>
+                    </div>
+                </div>
+
+                {{-- Siatka miesięczna --}}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-center select-none">
+                        <thead>
+                            <tr class="bg-[#002d62] text-white text-sm">
+                                <th class="py-2 font-semibold">Pn</th><th class="py-2 font-semibold">Wt</th>
+                                <th class="py-2 font-semibold">Śr</th><th class="py-2 font-semibold">Cz</th>
+                                <th class="py-2 font-semibold">Pt</th><th class="py-2 font-semibold">Sb</th>
+                                <th class="py-2 font-semibold">Nd</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            @php
+                                $day   = 1 - $offset;
+                                $today = \Carbon\Carbon::today();
+                            @endphp
+
+                            @for($row = 0; $row < 6 && $day <= $daysInMonth; $row++)
+                                <tr>
+                                    @for($col = 0; $col < 7; $col++, $day++)
+                                        @if($day < 1 || $day > $daysInMonth)
+                                            <td class="h-20 w-32 border border-[#cdd7e4] bg-[#f9fbfd]"></td>
+                                        @else
+                                            @php
+                                                $ev        = $eventsByDay[$day] ?? collect();
+                                                $date      = \Carbon\Carbon::create($year, $month, $day);
+                                                $isToday   = $date->isSameDay($today);
+                                                $isWeekend = $col >= 5;
+                                                $shown     = 0;
+                                            @endphp
+                                            <td class="h-20 w-32 align-top p-1 border border-[#cdd7e4]
+                                                       {{ $isWeekend ? 'bg-[#f2f6fa]' : 'bg-[#f9fbfd]' }}
+                                                       {{ $isToday ? 'ring-2 ring-blue-900/60' : '' }}">
+
+                                                {{-- numer dnia --}}
+                                                <div class="text-xs text-left {{ $isToday ? 'font-bold text-blue-900' : 'text-gray-700' }}">
+                                                    {{ $day }}
+                                                </div>
+
+                                                {{-- każdy konkurs ⇒ własny pasek (max 3) --}}
+                                                @foreach($ev as $event)
+                                                    @break($shown === 3)
+                                                    <div class="mt-1 text-[11px] leading-tight text-white bg-blue-900 rounded px-1 truncate"
+                                                         title="{{ $event->name }}">
+                                                        {{ \Illuminate\Support\Str::limit($event->name, 20) }}
+                                                    </div>
+                                                    @php $shown++ @endphp
+                                                @endforeach
+
+                                                {{-- +N jeśli więcej niż 3 --}}
+                                                @if($ev->count() > $shown)
+                                                    <div class="mt-1 text-[11px] leading-tight text-blue-900 bg-[#eaf0f6] rounded px-1">
+                                                        +{{ $ev->count() - $shown }}
+                                                    </div>
+                                                @endif
+                                            </td>
+                                        @endif
+                                    @endfor
+                                </tr>
+                            @endfor
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="text-sm text-gray-500 mt-2">
+                </p>
+            </section>
         </div>
     </div>
-</div>
-
-{{-- FullCalendar CSS & JS --}}
-<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css' rel='stylesheet' />
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js'></script>
-
-{{-- Kalendarz --}}
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const calendarEl = document.getElementById('calendar');
-
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'pl',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,listWeek'
-            },
-            events: [
-                {
-                    title: 'Testowy Event',
-                    start: '2025-05-10',
-                    end: '2025-05-12',
-                    url: '#'
-                },
-                ...@json($calendarEvents)
-            ]
-        });
-
-        calendar.render();
-    });
-</script>
-
-
-{{-- Styl kalendarza --}}
-<style>
-    #calendar {
-        max-width: 100%;
-        margin: 0 auto;
-    }
-    .fc-daygrid-event {
-        background-color: #002d62 !important;
-        color: #ffffff !important;
-    }
-</style>
-
 </x-app-layout>

@@ -37,12 +37,9 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/students/{student}', [CompetitionController::class, 'updateStudent'])->name('students.update');
     Route::delete('/students/{student}', [CompetitionController::class, 'deleteStudent'])->name('students.destroy');
 
-    // Trasy forum (postów)
     Route::get('/forums', [ForumController::class, 'index'])->name('forums.index');
     Route::get('/forums/{forum}', [ForumController::class, 'show'])->name('forums.show');
-    // (opcjonalnie, jeśli autor konkursu może tworzyć nowe wątki forum: Route::get('/forums/create'), Route::post('/forums'), itp.)
 
-    // Trasy dla komentarzy na forum (zagnieżdżone w ramach konkretnego posta forum)
     Route::post('/forums/{forum}/comments', [ForumCommentController::class, 'store'])
          ->name('forums.comments.store');
     Route::put('/forums/{forum}/comments/{comment}', [ForumCommentController::class, 'update'])
@@ -52,6 +49,9 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/', [DashboardController::class, 'index'])->name('home');
 Route::get('/competitions', [CompetitionController::class, 'index'])->name('competitions.index');
 Route::get('/competitions/{competition}', [CompetitionController::class, 'show'])->name('competitions.show');
-Route::get('/dashboard', [DashboardController::class, 'index']) ->middleware(['auth', 'verified']) ->name('dashboard');
-
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
+Route::get('/competitions/events-json', [DashboardController::class, 'eventsJson'])
+     ->name('competitions.eventsJson');
 require __DIR__.'/auth.php';
