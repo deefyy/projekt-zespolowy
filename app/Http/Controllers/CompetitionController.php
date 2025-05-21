@@ -27,7 +27,7 @@ class CompetitionController extends Controller
         $userRegistrations = collect();
         $competition->load('stages');
         if (auth()->check()) {
-            if (auth()->user()->role === 'admin') {
+            if (auth()->user()->role === 'admin' || auth()->user()->role === 'organizator') {
                 $userRegistrations = $competition->registrations()->with('student')->get();
             } else {
                 $userRegistrations = $competition->registrations()
@@ -84,7 +84,7 @@ class CompetitionController extends Controller
 
     public function edit(Competition $competition)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (auth()->user()->role !== 'admin' || auth()->user()->role !== 'organizator') {
             abort(403, 'Brak dostępu');
         }
 
@@ -94,7 +94,7 @@ class CompetitionController extends Controller
     public function update(Request $request, Competition $competition)
 {
     // Sprawdzenie uprawnień
-    if (auth()->user()->role !== 'admin') {
+    if (auth()->user()->role !== 'admin' || auth()->user()->role !== 'organizator') {
         abort(403, 'Brak dostępu');
     }
 
@@ -163,7 +163,7 @@ class CompetitionController extends Controller
 
     public function destroy(Competition $competition)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (auth()->user()->role !== 'admin' || auth()->user()->role !== 'organizator') {
             abort(403, 'Brak dostępu');
         }
 
@@ -250,8 +250,8 @@ class CompetitionController extends Controller
         $isOwner = CompetitionRegistration::where('student_id', $student->id)
             ->where('user_id', auth()->id())
             ->exists();
-
-        if (!$isAdmin && !$isOwner) {
+        $isOrganizator = auth()->user()->role === 'organizator';
+        if ((!$isAdmin || !$isOrganizator) && !$isOwner ) {
             abort(403, 'Brak dostępu');
         }
 
@@ -266,8 +266,8 @@ class CompetitionController extends Controller
         $isOwner = CompetitionRegistration::where('student_id', $student->id)
             ->where('user_id', auth()->id())
             ->exists();
-
-        if (!$isAdmin && !$isOwner) {
+        $isOrganizator = auth()->user()->role === 'organizator';
+        if ((!$isAdmin || !$isOrganizator) && !$isOwner ) {
             abort(403, 'Brak dostępu');
         }
 
@@ -304,8 +304,8 @@ class CompetitionController extends Controller
         $isOwner = CompetitionRegistration::where('student_id', $student->id)
             ->where('user_id', auth()->id())
             ->exists();
-
-        if (!$isAdmin && !$isOwner) {
+        $isOrganizator = auth()->user()->role === 'organizator';
+        if ((!$isAdmin || !$isOrganizator) && !$isOwner ) {
             abort(403, 'Brak dostępu');
         }
 
@@ -321,7 +321,10 @@ class CompetitionController extends Controller
     }
     public function editPoints(Competition $competition)
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        $userRole = auth()->user()?->role;
+        if (! ($userRole === 'admin' || $userRole === 'organizer')) {
+            abort(403, 'Brak dostępu');
+        }
         $studentIds = $competition->registrations()->pluck('student_id');
         $students = Student::whereIn('id', $studentIds)->get();
         $stages = $competition->stages()->get();
@@ -339,7 +342,10 @@ class CompetitionController extends Controller
     }
     public function updatePoints(Request $request, Competition $competition)
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        $userRole = auth()->user()?->role;
+        if (! ($userRole === 'admin' || $userRole === 'organizer')) {
+            abort(403, 'Brak dostępu');
+        }
 
         $request->validate([
             'points.*.*' => 'nullable|integer|min:0',
