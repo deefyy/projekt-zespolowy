@@ -10,7 +10,7 @@
     <div class="py-10">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             {{-- Tylko dla admina --}}
-            @if(auth()->user() && auth()->user()->role === 'admin')
+            @if(auth()->user() && (auth()->user()->role === 'admin' || auth()->user()->role === 'organizator'))
                 <a href="{{ route('competitions.create') }}" class="bg-[#002d62] text-white px-5 py-3 rounded-lg mb-6 inline-block hover:bg-[#001b3e] transition">
                     ➕ Dodaj nowy konkurs
                 </a>
