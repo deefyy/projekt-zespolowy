@@ -53,8 +53,8 @@
         </p>
       @endguest
 
-      {{-- przyciski admina --}}
-      @if(auth()->user()?->role === 'admin')
+      {{-- przyciski admina i organizatora --}}
+      @if(auth()->user()?->role === 'admin' || auth()->user()->role === 'organizator')
         <div class="mt-2 flex gap-2">
           <a href="{{ route('competitions.edit', $competition) }}"
              class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">

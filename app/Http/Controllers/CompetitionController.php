@@ -87,7 +87,7 @@ class CompetitionController extends Controller
 
     public function edit(Competition $competition)
     {
-        if (auth()->user()->role !== 'admin' || auth()->user()->role !== 'organizator') {
+        if (auth()->user()->role !== 'admin' && auth()->user()->role !== 'organizator') {
             abort(403, 'Brak dostępu');
         }
 
@@ -95,11 +95,11 @@ class CompetitionController extends Controller
     }
 
     public function update(Request $request, Competition $competition)
-{
-    // Sprawdzenie uprawnień
-    if (auth()->user()->role !== 'admin' || auth()->user()->role !== 'organizator') {
-        abort(403, 'Brak dostępu');
-    }
+    {
+        // Sprawdzenie uprawnień
+        if (auth()->user()->role !== 'admin' && auth()->user()->role !== 'organizator') {
+            abort(403, 'Brak dostępu');
+        }
 
         // Walidacja danych wejściowych
         $validated = $request->validate([
@@ -166,7 +166,7 @@ class CompetitionController extends Controller
 
     public function destroy(Competition $competition)
     {
-        if (auth()->user()->role !== 'admin' || auth()->user()->role !== 'organizator') {
+        if (auth()->user()->role !== 'admin' && auth()->user()->role !== 'organizator') {
             abort(403, 'Brak dostępu');
         }
 
@@ -179,9 +179,9 @@ class CompetitionController extends Controller
     private function schoolClasses(): array
     {
         return [
-            '1, Szkoła postawowa','2, Szkoła postawowa','3, Szkoła postawowa',
-            '4, Szkoła postawowa','5, Szkoła postawowa','6, Szkoła postawowa',
-            '7, Szkoła postawowa','8, Szkoła postawowa',
+            '1, Szkoła podstawowa','2, Szkoła podstawowa','3, Szkoła podstawowa',
+            '4, Szkoła podstawowa','5, Szkoła podstawowa','6, Szkoła podstawowa',
+            '7, Szkoła podstawowa','8, Szkoła podstawowa',
             '1, Szkoła średnia','2, Szkoła średnia','3, Szkoła średnia',
             '4, Szkoła średnia','5, Szkoła średnia',
         ];
@@ -385,7 +385,7 @@ class CompetitionController extends Controller
     public function editPoints(Competition $competition)
     {
         $userRole = auth()->user()?->role;
-        if (! ($userRole === 'admin' || $userRole === 'organizer')) {
+        if (! ($userRole === 'admin' || $userRole === 'organizator')) {
             abort(403, 'Brak dostępu');
         }
         $studentIds = $competition->registrations()->pluck('student_id');
@@ -406,7 +406,7 @@ class CompetitionController extends Controller
     public function updatePoints(Request $request, Competition $competition)
     {
         $userRole = auth()->user()?->role;
-        if (! ($userRole === 'admin' || $userRole === 'organizer')) {
+        if (! ($userRole === 'admin' || $userRole === 'organizator')) {
             abort(403, 'Brak dostępu');
         }
 
