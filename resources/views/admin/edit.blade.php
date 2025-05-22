@@ -36,6 +36,7 @@
                                 <select name="role" id="role" class="form-select border border-[#002d62]" required>
                                     <option value="user" {{ old('role', $user->role ?? '') == 'user' ? 'selected' : '' }}>Użytkownik</option>
                                     <option value="admin" {{ old('role', $user->role ?? '') == 'admin' ? 'selected' : '' }}>Administrator</option>
+                                    <option value="organizator" {{ old('role', $user->role ?? '') == 'organizator' ? 'selected' : '' }}>Organizator</option>
                                 </select>
                             </div>
 
