@@ -53,8 +53,13 @@
         </p>
       @endguest
 
-      {{-- przyciski admina i organizatora --}}
-      @if(auth()->user()?->role === 'admin' || auth()->user()->role === 'organizator')
+        @php
+            $user     = auth()->user();
+            $isAdmin  = $user?->role === 'admin';
+            $isOwner  = $competition->user_id === $user?->id;
+        @endphp
+
+        @if($isAdmin || $isOwner)
         <div class="mt-2 flex gap-2">
           <a href="{{ route('competitions.edit', $competition) }}"
              class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
@@ -64,7 +69,7 @@
                 onsubmit="return confirm('Czy na pewno chcesz usunąć ten konkurs?');">
             @csrf
             @method('DELETE')
-            <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+            <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700" data-skip-lock>
               Usuń konkurs
             </button>
           </form>
@@ -108,13 +113,15 @@
                               <tbody>
                                   @php
                                       $registrationStillOpen = now()->lessThanOrEqualTo($competition->registration_deadline);
-                                      $isAdmin = auth()->user()?->role === 'admin';
+                                      $user     = auth()->user();
+                                      $isAdmin  = $user?->role === 'admin';
+                                      $isOwner  = $competition->user_id === $user?->id
                                   @endphp
 
                                   @foreach($userRegistrations as $reg)
                                       @if($reg->student)
                                           @php
-                                              $canEditOrDelete = $isAdmin || (
+                                              $canEditOrDelete = $isAdmin || $isOwner ||  (
                                                   $reg->user_id === auth()->id() && $registrationStillOpen
                                               );
                                           @endphp
@@ -144,7 +151,7 @@
                                                             onsubmit="return confirm('Na pewno chcesz usunąć ucznia?');">
                                                           @csrf
                                                           @method('DELETE')
-                                                          <button type="submit" class="text-red-500 hover:underline">Usuń</button>
+                                                          <button type="submit" class="text-red-500 hover:underline" data-skip-lock>Usuń</button>
                                                       </form>
                                                   @else
                                                       <span class="text-gray-400 italic">Brak dostępu</span>
