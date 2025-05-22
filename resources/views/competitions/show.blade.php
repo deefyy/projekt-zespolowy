@@ -31,14 +31,20 @@
 
       {{-- przycisk rejestracji --}}
       @auth
+      <div class="flex gap-2">
         @if(now()->lessThanOrEqualTo($competition->registration_deadline))
           <a href="{{ route('competitions.showRegisterForm', $competition) }}"
              class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
             Zarejestruj uczniów
           </a>
+          <a href="{{ route('competitions.showImportRegistrationsForm', $competition) }}"
+             class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">
+            Importuj z Excela
+          </a>
         @else
           <p class="text-red-600 font-semibold">Rejestracja została zakończona.</p>
         @endif
+      </div>
       @endauth
 
       @guest

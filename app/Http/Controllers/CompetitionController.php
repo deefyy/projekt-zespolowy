@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Competition;
 use App\Models\Stage;
 use App\Models\Student;
@@ -12,6 +14,7 @@ use App\Models\StageCompetition;
 use App\Notifications\CompetitionCreatedNotification;
 
 use App\Exports\CompetitionsExport;
+use App\Imports\CompetitionsImport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CompetitionController extends Controller
@@ -92,73 +95,73 @@ class CompetitionController extends Controller
     }
 
     public function update(Request $request, Competition $competition)
-{
-    // Sprawdzenie uprawnień
-    if (auth()->user()->role !== 'admin') {
-        abort(403, 'Brak dostępu');
-    }
-
-    // Walidacja danych wejściowych
-    $validated = $request->validate([
-        'name'                  => 'required|string|max:255',
-        'description'           => 'nullable|string',
-        'start_date'            => 'required|date',
-        'end_date'              => 'required|date|after_or_equal:start_date',
-        'registration_deadline' => 'required|date|before_or_equal:end_date',
-        'stages_count'          => 'required|integer|min:1|max:10',
-    ]);
-
-    // Aktualizacja danych konkursu
-    $competition->update($validated);
-
-    // 🔍 **Pobranie aktualnej liczby etapów**
-    $currentStages  = $competition->stages()->count();
-    $newStagesCount = $validated['stages_count'];
-
-    if ($newStagesCount > $currentStages) {
-        // Dodawanie brakujących etapów
-        for ($i = $currentStages + 1; $i <= $newStagesCount; $i++) {
-            $newStage = Stage::create([
-                'stage'           => $i,
-                'date'            => now()->addWeeks($i),
-                'competition_id'  => $competition->id,
-            ]);
-
-            // ► DODAJ dla każdego ucznia rekord stages_competition
-            $competition->registrations->each(function($reg) use($competition, $newStage) {
-                StageCompetition::create([
-                    'competition_id' => $competition->id,
-                    'stage_id'       => $newStage->id,
-                    'student_id'     => $reg->student_id,
-                    'result'         => null,
-                ]);
-            });
+    {
+        // Sprawdzenie uprawnień
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Brak dostępu');
         }
+
+        // Walidacja danych wejściowych
+        $validated = $request->validate([
+            'name'                  => 'required|string|max:255',
+            'description'           => 'nullable|string',
+            'start_date'            => 'required|date',
+            'end_date'              => 'required|date|after_or_equal:start_date',
+            'registration_deadline' => 'required|date|before_or_equal:end_date',
+            'stages_count'          => 'required|integer|min:1|max:10',
+        ]);
+
+        // Aktualizacja danych konkursu
+        $competition->update($validated);
+
+        // 🔍 **Pobranie aktualnej liczby etapów**
+        $currentStages  = $competition->stages()->count();
+        $newStagesCount = $validated['stages_count'];
+
+        if ($newStagesCount > $currentStages) {
+            // Dodawanie brakujących etapów
+            for ($i = $currentStages + 1; $i <= $newStagesCount; $i++) {
+                $newStage = Stage::create([
+                    'stage'           => $i,
+                    'date'            => now()->addWeeks($i),
+                    'competition_id'  => $competition->id,
+                ]);
+
+                // ► DODAJ dla każdego ucznia rekord stages_competition
+                $competition->registrations->each(function($reg) use($competition, $newStage) {
+                    StageCompetition::create([
+                        'competition_id' => $competition->id,
+                        'stage_id'       => $newStage->id,
+                        'student_id'     => $reg->student_id,
+                        'result'         => null,
+                    ]);
+                });
+            }
+        }
+        elseif ($newStagesCount < $currentStages) {
+            // Oblicz, które etapy usuwamy
+            $toDeleteNumbers = range($newStagesCount + 1, $currentStages);
+
+            // Pobierz ID etapów do usunięcia
+            $stagesToDelete = $competition->stages()
+                ->whereIn('stage', $toDeleteNumbers)
+                ->pluck('id');
+
+            // Usuń wpisy pivot
+            StageCompetition::where('competition_id', $competition->id)
+                ->whereIn('stage_id', $stagesToDelete)
+                ->delete();
+
+            // Usuń same etapy
+            $competition->stages()
+                ->whereIn('id', $stagesToDelete)
+                ->delete();
+        }
+
+        // Odświeżenie widoku z odpowiednim komunikatem
+        return redirect()->route('competitions.show', $competition)
+            ->with('success', 'Konkurs został zaktualizowany.');
     }
-    elseif ($newStagesCount < $currentStages) {
-        // Oblicz, które etapy usuwamy
-        $toDeleteNumbers = range($newStagesCount + 1, $currentStages);
-
-        // Pobierz ID etapów do usunięcia
-        $stagesToDelete = $competition->stages()
-            ->whereIn('stage', $toDeleteNumbers)
-            ->pluck('id');
-
-        // Usuń wpisy pivot
-        StageCompetition::where('competition_id', $competition->id)
-            ->whereIn('stage_id', $stagesToDelete)
-            ->delete();
-
-        // Usuń same etapy
-        $competition->stages()
-            ->whereIn('id', $stagesToDelete)
-            ->delete();
-    }
-
-    // Odświeżenie widoku z odpowiednim komunikatem
-    return redirect()->route('competitions.show', $competition)
-        ->with('success', 'Konkurs został zaktualizowany.');
-}
 
 
     public function destroy(Competition $competition)
@@ -319,6 +322,66 @@ class CompetitionController extends Controller
         $fileName = 'konkurs.xlsx';
         return Excel::download(new CompetitionsExport($competition), $fileName);
     }
+
+    private function getExpectedHeaders(Competition $competition): array
+    {
+        $baseHeaders = [
+            'L.p.', 'Imię ucznia', 'Nazwisko ucznia', 'Klasa', 'Nazwa szkoły',
+            'Oświadczenie', 'Nauczyciel', 'Rodzic', 'Kontakt',
+        ];
+
+        $stageHeaders = $competition->stages()->orderBy('stage')->get()->map(function ($stage) {
+            return "{$stage->stage} ETAP";
+        })->toArray();
+
+        $sumHeader = ['SUMA'];
+
+        return array_merge($baseHeaders, $stageHeaders, $sumHeader);
+    }
+
+    public function showImportRegistrationsForm(Competition $competition)
+    {
+        $expectedHeaders = $this->getExpectedHeaders($competition);
+        return view('competitions.import_form', compact('competition', 'expectedHeaders'));
+    }
+
+    public function importRegistrations(Request $request, Competition $competition)
+    {
+        $request->validate([
+            'excel_file' => 'required|mimes:xlsx,xls,csv',
+            'column_mappings' => 'nullable|array',
+            'column_mappings.*' => 'nullable|string',
+        ]);
+
+        $file = $request->file('excel_file');
+
+        $mappingsForImporter = [];
+        if ($request->has('column_mappings')) {
+            foreach ($request->input('column_mappings') as $expectedHeader => $userProvidedHeader) {
+                if (!empty(trim($userProvidedHeader))) {
+                    $mappingsForImporter[trim($userProvidedHeader)] = $expectedHeader;
+                }
+            }
+        }
+
+        DB::beginTransaction();
+
+        try {
+            Excel::import(new CompetitionsImport($competition, $mappingsForImporter), $file);
+            DB::commit();
+            return back()->with('success', 'Dane zostały pomyślnie zaimportowane!');
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            DB::rollBack();
+            $failures = $e->failures();
+            return back()->withErrors(['excel_file' => 'Wystąpiły błędy walidacji podczas importu.'])
+                         ->with('validation_failures', $failures);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Błąd importu Excela dla konkursu {$competition->id}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return back()->with('error', 'Wystąpił nieoczekiwany błąd podczas importu: ' . $e->getMessage());
+        }
+    }
+
     public function editPoints(Competition $competition)
     {
         abort_unless(auth()->user()?->role === 'admin', 403);

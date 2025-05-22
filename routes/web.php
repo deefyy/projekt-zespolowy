@@ -28,6 +28,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/competitions/create', [CompetitionController::class, 'create'])->name('competitions.create');
     Route::get('competitions/{competition}/edit', [CompetitionController::class, 'edit'])->name('competitions.edit');
     Route::get('competitions/{competition}/export-registrations', [CompetitionController::class, 'exportRegistrations'])->name('competitions.exportRegistrations');
+    Route::get('competitions/{competition}/import-registrations', [CompetitionController::class, 'showImportRegistrationsForm'])->name('competitions.showImportRegistrationsForm');
+    Route::post('competitions/{competition}/import-registrations', [CompetitionController::class, 'importRegistrations'])->name('competitions.importRegistrations');
     Route::put('competitions/{competition}', [CompetitionController::class, 'update'])->name('competitions.update');
     Route::delete('competitions/{competition}', [CompetitionController::class, 'destroy'])->name('competitions.destroy');
     Route::post('/competitions', [CompetitionController::class, 'store'])->name('competitions.store');
