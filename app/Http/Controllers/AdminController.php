@@ -81,7 +81,7 @@ class AdminController extends Controller
             'name' => 'required',
             'last_name' => 'nullable',
             'email' => 'required|email|unique:users,email,'.$user->id,
-            'role' => 'required|in:user,employee,admin',
+            'role' => 'required|in:user,organizator,admin',
         ]);
 
         $user->update([
