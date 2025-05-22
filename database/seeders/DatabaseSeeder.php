@@ -30,5 +30,13 @@ class DatabaseSeeder extends Seeder
             'role' => 'user',
             'password' => 'testtest',
         ]);
+
+        User::factory()->create([
+            'name' => 'Organizator',
+            'last_name' => 'Organizator',
+            'email' => 'org@example.com',
+            'role' => 'organizator',
+            'password' => 'org',
+        ]);
     }
 }
