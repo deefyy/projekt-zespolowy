@@ -43,14 +43,21 @@
                  required>
         </div>
 
-        {{-- Klasa --}}
+        {{-- Klasa – SELECT zamiast input --}}
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700">Klasa</label>
-          <input type="text"
-                 name="class"
-                 value="{{ old('class', $student->class) }}"
-                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                 required>
+            <select name="class"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                    required>
+                <option value="" disabled>– wybierz –</option>
+
+                @foreach(($classes ?? []) as $c)
+                    <option value="{{ $c }}"
+                            {{ old('class', $student->class) == $c ? 'selected' : '' }}>
+                        {{ $c }}
+                    </option>
+                @endforeach
+            </select>
         </div>
 
         {{-- Szkoła --}}
@@ -61,6 +68,15 @@
                  value="{{ old('school', $student->school) }}"
                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                  required>
+        </div>
+        
+        {{-- Adres Szkoły --}}
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700">Adres Szkoły</label>
+          <input type="text"
+                 name="school_address"
+                 value="{{ old('school_address', $student->school_address) }}"
+                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
         </div>
 
         {{-- Nauczyciel --}}
@@ -109,10 +125,11 @@
         </div>
       </form>
 
-      {{-- link powrotny – jeśli uczeń ma przypisany konkurs --}}
+      {{-- Link powrotny --}}
       @php
         $registration = $student->competitionRegistrations()->first();
       @endphp
+
       @if ($registration && $registration->competition)
         <a href="{{ route('competitions.show', $registration->competition->id) }}"
            class="text-blue-500 hover:underline mt-4 inline-block">
