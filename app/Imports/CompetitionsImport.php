@@ -6,309 +6,304 @@ use App\Models\Competition;
 use App\Models\Student;
 use App\Models\CompetitionRegistration;
 use App\Models\StageCompetition;
-use Illuminate\Support\Collection;
+use App\Models\User;
+use Illuminate\Support\Collection as IlluminateCollection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
-class CompetitionsImport implements ToCollection, WithHeadingRow //, WithValidation
+class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
 {
-    private Competition $competition;
-    private array $userCustomMappings;
-    private Collection $existingCompetitionRegistrations;
+    protected Competition $competition;
+    protected array $columnMappings;
+    protected $stagesByNumber;
+    protected $registrationsOrdered;
 
-    const KEY_LP = 'internal_lp';
-    const KEY_NAME = 'internal_name';
-    const KEY_LAST_NAME = 'internal_last_name';
-    const KEY_CLASS = 'internal_class';
-    const KEY_SCHOOL = 'internal_school';
-    const KEY_SCHOOL_ADDRESS = 'internal_school_address';
-    const KEY_STATEMENT = 'internal_statement';
-    const KEY_TEACHER = 'internal_teacher';
-    const KEY_GUARDIAN = 'internal_guardian';
-    const KEY_CONTACT = 'internal_contact';
-    const KEY_SUM = 'internal_sum';
-    const KEY_STAGE_RESULT_PREFIX = 'internal_stage_result_';
-
-    private array $expectedExportHeadersToInternalKey = [];
-    private array $finalNormalizedFileHeaderToInternalKey = [];
-    private array $internalKeyToFinalNormalizedFileHeader = [];
-    private array $internalStageKeysMapping = [];
-
-    /**
-     * @param Competition $competition
-     * @param array $customColumnMappings Mapowanie od użytkownika w formacie:
-     *                                   ['Nagłówek w Pliku Excel od Użytkownika' => 'Oczekiwany Nagłówek z Eksportu']
-     *                                   Np.: ['Imię Stud.' => 'Imię ucznia', 'Etap I' => '1 ETAP']
-     */
-    public function __construct(Competition $competition, array $customColumnMappings = [])
+    public function __construct(Competition $competition, array $columnMappingsFromController = [])
     {
         $this->competition = $competition;
-        $this->userCustomMappings = $customColumnMappings;
+        $this->columnMappings = $columnMappingsFromController;
+        Log::info("CompetitionsImport Constructor: Competition ID {$this->competition->id}");
 
-        $this->initializeMappings();
-
-        $query = $this->competition->registrations()
-                        ->with('student');
-
-        if (Auth::check() && Auth::user()->role !== 'admin') {
-            $query->where('user_id', Auth::id());
+        if (method_exists($this->competition, 'stages')) {
+            $this->stagesByNumber = $this->competition->stages()->orderBy('stage')->get()->keyBy('stage');
+            Log::info("CompetitionsImport Constructor: Loaded " . ($this->stagesByNumber ? $this->stagesByNumber->count() : 0) . " stages. Keys: " . json_encode($this->stagesByNumber ? $this->stagesByNumber->keys()->toArray() : []));
+        } else {
+            Log::error("CompetitionsImport Constructor: Competition model does not have 'stages' method or relation is broken.");
+            $this->stagesByNumber = collect();
         }
-
-        $orderByClauses = [
-            ['column' => 'created_at', 'direction' => 'asc'],
-            ['column' => 'id', 'direction' => 'asc'],
-        ];
-
-        foreach ($orderByClauses as $clause) {
-            if (strpos($clause['column'], '.') === false) {
-                $query->orderBy($clause['column'], $clause['direction']);
-            }
-        }
-
-        $this->existingCompetitionRegistrations = $query->get();
+        $this->loadRegistrations();
     }
 
-    private function initializeMappings(): void
+    protected function loadRegistrations()
     {
-        $this->expectedExportHeadersToInternalKey = [
-            'L.p.' => self::KEY_LP,
-            'Imię ucznia' => self::KEY_NAME,
-            'Nazwisko ucznia' => self::KEY_LAST_NAME,
-            'Klasa' => self::KEY_CLASS,
-            'Nazwa szkoły' => self::KEY_SCHOOL,
-            'Adres szkoły' => self::KEY_SCHOOL_ADDRESS, // Upewnij się, że to jest w Twoich oczekiwanych nagłówkach
-            'Oświadczenie' => self::KEY_STATEMENT,
-            'Nauczyciel' => self::KEY_TEACHER,
-            'Rodzic' => self::KEY_GUARDIAN,
-            'Kontakt' => self::KEY_CONTACT,
-            'SUMA' => self::KEY_SUM,
-        ];
-        // Ten if jest trochę dziwny, lepiej mieć pewność, że Adres szkoły jest w tablicy powyżej, jeśli jest używany
-        // if (!in_array('Adres Szkoły', array_keys($this->expectedExportHeadersToInternalKey))) {
-        //    $this->expectedExportHeadersToInternalKey['Adres Szkoły'] = self::KEY_SCHOOL_ADDRESS;
-        // }
-
-        $stages = $this->competition->stages()->orderBy('stage')->get();
-        foreach ($stages as $stage) {
-            $exportHeader = "{$stage->stage} ETAP";
-            $internalKey = self::KEY_STAGE_RESULT_PREFIX . $stage->id;
-            $this->expectedExportHeadersToInternalKey[$exportHeader] = $internalKey;
-            $this->internalStageKeysMapping[$internalKey] = $stage->id;
-        }
-
-        $processedExpectedHeaders = [];
-
-        if (!empty($this->userCustomMappings)) {
-            foreach ($this->userCustomMappings as $userFileHeader => $expectedExportHeader) {
-                if (isset($this->expectedExportHeadersToInternalKey[$expectedExportHeader])) {
-                    $internalKey = $this->expectedExportHeadersToInternalKey[$expectedExportHeader];
-                    $normalizedUserFileHeader = Str::snake(Str::ascii(strtolower(trim($userFileHeader))));
-
-                    $this->finalNormalizedFileHeaderToInternalKey[$normalizedUserFileHeader] = $internalKey;
-                    $this->internalKeyToFinalNormalizedFileHeader[$internalKey] = $normalizedUserFileHeader;
-                    $processedExpectedHeaders[$expectedExportHeader] = true;
-                } else {
-                    Log::warning("Import konkursu {$this->competition->id}: Użytkownik próbował zmapować nagłówek z pliku ('{$userFileHeader}') na nieznany oczekiwany nagłówek eksportu ('{$expectedExportHeader}').");
-                }
+        if (method_exists($this->competition, 'registrations')) {
+            $this->registrationsOrdered = $this->competition->registrations()
+                                              ->with('student')
+                                              ->orderBy('id')
+                                              ->get();
+            Log::info("CompetitionsImport loadRegistrations: Loaded " . ($this->registrationsOrdered ? $this->registrationsOrdered->count() : 0) . " ordered registrations.");
+            if ($this->registrationsOrdered && $this->registrationsOrdered->isNotEmpty() && $this->registrationsOrdered->first()->student) {
+                Log::info("CompetitionsImport loadRegistrations: First registration student ID: " . $this->registrationsOrdered->first()->student->id);
             }
-        }
-
-        foreach ($this->expectedExportHeadersToInternalKey as $expectedExportHeader => $internalKey) {
-            if (!isset($processedExpectedHeaders[$expectedExportHeader])) {
-                $normalizedExpectedHeader = Str::snake(Str::ascii(strtolower(trim($expectedExportHeader))));
-                $this->finalNormalizedFileHeaderToInternalKey[$normalizedExpectedHeader] = $internalKey;
-
-                if (!isset($this->internalKeyToFinalNormalizedFileHeader[$internalKey])) {
-                    $this->internalKeyToFinalNormalizedFileHeader[$internalKey] = $normalizedExpectedHeader;
-                }
-            }
+        } else {
+            Log::error("CompetitionsImport loadRegistrations: Competition model does not have 'registrations' method.");
+            $this->registrationsOrdered = collect();
         }
     }
 
-    public function collection(Collection $rows)
+    public function collection(IlluminateCollection $rows)
     {
-        foreach ($rows as $excelRowIndex => $row) {
-            Log::channel('daily')->debug("Importer - Wiersz Excel (indeks $excelRowIndex): " . json_encode($row->toArray()));
-            $rowDataAsArray = $row->toArray();
-            $mappedData = [];
+        DB::listen(function ($query) {
+            Log::debug("SQL Query: " . $query->sql . " | Bindings: " . json_encode($query->bindings) . " | Time: " . $query->time . "ms");
+        });
 
-            foreach ($rowDataAsArray as $normalizedFileHeader => $value) {
-                if (isset($this->finalNormalizedFileHeaderToInternalKey[$normalizedFileHeader])) {
-                    $internalKey = $this->finalNormalizedFileHeaderToInternalKey[$normalizedFileHeader];
-                    $mappedData[$internalKey] = $value;
+        DB::beginTransaction();
+        try {
+            $initialRegistrationsCount = $this->registrationsOrdered ? $this->registrationsOrdered->count() : 0;
+            Log::info("CompetitionsImport collection: Starting with {$initialRegistrationsCount} initial registrations.");
+
+            foreach ($rows as $rowIndex => $row) {
+                $rowDataFromExcel = $row->toArray();
+                $lpValue = $this->getRowValue($rowDataFromExcel, 'Lp');
+                $lp = is_numeric($lpValue) ? (int)$lpValue : 0;
+
+                Log::info("Processing L.p. {$lp} from Excel row " . ($rowIndex + 1) . " (Excel value: '{$lpValue}')");
+
+                if ($lp <= 0) {
+                    Log::warning("CompetitionsImport: Invalid L.p. (value: '{$lpValue}') for row " . ($rowIndex + 1) . ". Skipping.");
+                    continue;
                 }
-            }
 
-            $lpFromExcel = $mappedData[self::KEY_LP] ?? null;
-            $studentToProcess = null;
-            $competitionRegistration = null; // Zmienna na CompetitionRegistration
+                $student = null;
+                $isNewStudentFlow = false;
 
-            if ($lpFromExcel !== null) {
-                $registrationIndexInCollection = (int)$lpFromExcel - 1;
-
-                if ($registrationIndexInCollection >= 0 && $this->existingCompetitionRegistrations->has($registrationIndexInCollection)) {
-                    $competitionRegistrationToUpdate = $this->existingCompetitionRegistrations->get($registrationIndexInCollection);
-
-                    if ($competitionRegistrationToUpdate && $competitionRegistrationToUpdate->student) {
-                        $studentToProcess = $competitionRegistrationToUpdate->student;
-                        $competitionRegistration = $competitionRegistrationToUpdate; // Mamy istniejącą rejestrację
-
-                        $studentDataForUpdate = [
-                            'name' => $mappedData[self::KEY_NAME] ?? $studentToProcess->name,
-                            'last_name' => $mappedData[self::KEY_LAST_NAME] ?? $studentToProcess->last_name,
-                            'school' => $mappedData[self::KEY_SCHOOL] ?? $studentToProcess->school,
-                            'school_address' => $mappedData[self::KEY_SCHOOL_ADDRESS] ?? $studentToProcess->school_address,
-                            'class' => $mappedData[self::KEY_CLASS] ?? $studentToProcess->class,
-                            'statement' => $mappedData[self::KEY_STATEMENT] ?? $studentToProcess->statement,
-                            'teacher' => $mappedData[self::KEY_TEACHER] ?? $studentToProcess->teacher,
-                            'guardian' => $mappedData[self::KEY_GUARDIAN] ?? $studentToProcess->guardian,
-                            'contact' => $mappedData[self::KEY_CONTACT] ?? $studentToProcess->contact,
-                        ];
-                        $studentToProcess->update($studentDataForUpdate);
-                        Log::info("Zaktualizowano studenta ID: {$studentToProcess->id} (rejestracja ID: {$competitionRegistration->id}) na podstawie L.p. {$lpFromExcel}.");
-                    } else {
-                        Log::warning("Import konkursu {$this->competition->id}: Błąd z CompetitionRegistration/studentem dla L.p. {$lpFromExcel}. Nie wykonano aktualizacji.");
+                if ($this->registrationsOrdered && $lp <= $initialRegistrationsCount) {
+                    $registration = $this->registrationsOrdered->get($lp - 1);
+                    if (!$registration) {
+                        Log::error("CompetitionsImport: CRITICAL - Failed to get registration for L.p. {$lp} (index " .($lp-1). ") from preloaded {$initialRegistrationsCount} registrations. Skipping.");
+                        continue;
                     }
-                } else {
-                    Log::info("Import konkursu {$this->competition->id}: Nie znaleziono istniejącej CompetitionRegistration dla L.p. {$lpFromExcel}. Rozważam jako nowy wpis (jeśli są dane).");
-                }
-            }
+                    if (!$registration->student) {
+                        Log::warning("CompetitionsImport: Registration for L.p. {$lp} (Reg ID: {$registration->id}) has no associated student. Skipping update for this L.p.");
+                        continue;
+                    }
+                    $student = $registration->student;
+                    Log::info("Found existing student ID {$student->id} ({$student->name} {$student->last_name}) for L.p. {$lp}. Proceeding with update.");
 
-            // Jeśli nie zaktualizowano/znaleziono studenta przez L.p.
-            // ORAZ jeśli mamy dane do stworzenia nowego studenta (np. imię i nazwisko)
-            if ($studentToProcess === null && (!empty($mappedData[self::KEY_NAME] ?? null) || !empty($mappedData[self::KEY_LAST_NAME] ?? null))) {
-                Log::info("Próba utworzenia nowego studenta dla wiersza Excel (indeks $excelRowIndex).");
-                $studentToProcess = Student::updateOrCreate(
-                    [ // Kryteria wyszukiwania
-                        'name' => $mappedData[self::KEY_NAME] ?? null,
-                        'last_name' => $mappedData[self::KEY_LAST_NAME] ?? null,
-                        'school' => $mappedData[self::KEY_SCHOOL] ?? null,
-                    ],
-                    [ // Dane do utworzenia / aktualizacji
-                        'school_address' => $mappedData[self::KEY_SCHOOL_ADDRESS] ?? null,
-                        'class' => $mappedData[self::KEY_CLASS] ?? null,
-                        'statement' => $mappedData[self::KEY_STATEMENT] ?? null,
-                        'teacher' => $mappedData[self::KEY_TEACHER] ?? null,
-                        'guardian' => $mappedData[self::KEY_GUARDIAN] ?? null,
-                        'contact' => $mappedData[self::KEY_CONTACT] ?? null,
-                    ]
-                );
+                    $studentDataToUpdate = [
+                        'name'           => $this->getRowValue($rowDataFromExcel, 'Imię ucznia', $student->name),
+                        'last_name'      => $this->getRowValue($rowDataFromExcel, 'Nazwisko ucznia', $student->last_name),
+                        'class'          => (string) $this->getRowValue($rowDataFromExcel, 'Klasa', $student->class),
+                        'school'         => $this->getRowValue($rowDataFromExcel, 'Nazwa szkoły', $student->school),
+                        'school_address' => $this->getRowValue($rowDataFromExcel, 'Adres szkoły', $student->school_address),
+                        'teacher'        => $this->getRowValue($rowDataFromExcel, 'Nauczyciel', $student->teacher),
+                        'guardian'       => $this->getRowValue($rowDataFromExcel, 'Rodzic', $student->guardian),
+                        'contact'        => $this->getRowValue($rowDataFromExcel, 'Kontakt', $student->contact),
+                        'statement'      => $this->parseBoolean($this->getRowValue($rowDataFromExcel, 'Oświadczenie', $student->statement)),
+                    ];
+                    Log::info("Data for Student::update (ID {$student->id}): " . json_encode($studentDataToUpdate));
+                    $student->update($studentDataToUpdate);
+                    Log::info("Student ID {$student->id} update executed.");
 
-                // Utwórz nową CompetitionRegistration dla nowo utworzonego/znalezionego studenta
-                $competitionRegistration = CompetitionRegistration::firstOrCreate( // <--- POPRAWIONA NAZWA MODELU
-                    [
-                        'student_id' => $studentToProcess->id,
-                        'competition_id' => $this->competition->id,
-                    ],
-                    [
-                        'user_id' => Auth::id(), // lub inny odpowiedni user_id
-                    ]
-                );
-                Log::info("Utworzono/znaleziono studenta ID: {$studentToProcess->id} i CompetitionRegistration ID: {$competitionRegistration->id}.");
-            }
+                } elseif ($lp > $initialRegistrationsCount) {
+                    $isNewStudentFlow = true;
+                    Log::info("L.p. {$lp} is for a new student (initial count was {$initialRegistrationsCount}). Proceeding with creation.");
 
+                    $newStudentName = $this->getRowValue($rowDataFromExcel, 'Imię ucznia');
+                    $newStudentLastName = $this->getRowValue($rowDataFromExcel, 'Nazwisko ucznia');
 
-            // Jeśli mamy studenta (zaktualizowanego lub nowo utworzonego), przetwarzamy wyniki etapów
-            if ($studentToProcess && $competitionRegistration) { // Upewnij się, że mamy też rejestrację
-                foreach ($this->internalStageKeysMapping as $internalStageKey => $stageId) {
-                    $resultValue = $mappedData[$internalStageKey] ?? null;
+                    if (empty($newStudentName) || empty($newStudentLastName)) {
+                        Log::warning("CompetitionsImport: Missing required data (Imię ucznia, Nazwisko ucznia) to create new student for L.p. {$lp}. Skipping row. Name='{$newStudentName}', LastName='{$newStudentLastName}'");
+                        continue;
+                    }
 
-                    if (array_key_exists($internalStageKey, $mappedData)) {
-                        if ($resultValue !== null && $resultValue !== '') {
-                            StageCompetition::updateOrCreate(
-                                [
-                                    'student_id' => $studentToProcess->id,
-                                    'stage_id' => $stageId,
-                                    'competition_id' => $this->competition->id, // Upewnij się, że to pole istnieje i jest potrzebne w StageCompetition
-                                ],
-                                [
-                                    'result' => $resultValue,
-                                ]
-                            );
+                    $studentDataToCreate = [
+                        'name'           => $newStudentName,
+                        'last_name'      => $newStudentLastName,
+                        'class'          => (string) $this->getRowValue($rowDataFromExcel, 'Klasa'),
+                        'school'         => $this->getRowValue($rowDataFromExcel, 'Nazwa szkoły'),
+                        'school_address' => $this->getRowValue($rowDataFromExcel, 'Adres szkoły'),
+                        'teacher'        => $this->getRowValue($rowDataFromExcel, 'Nauczyciel'),
+                        'guardian'       => $this->getRowValue($rowDataFromExcel, 'Rodzic'),
+                        'contact'        => $this->getRowValue($rowDataFromExcel, 'Kontakt'),
+                        'statement'      => $this->parseBoolean($this->getRowValue($rowDataFromExcel, 'Oświadczenie')),
+                    ];
+                    Log::info("Data for Student::create: " . json_encode($studentDataToCreate));
+                    $student = Student::create($studentDataToCreate);
+                    Log::info("New student created with ID {$student->id} for L.p. {$lp}.");
+
+                    $userIdForRegistration = Auth::id() ?? $this->competition->user_id;
+                    if (!$userIdForRegistration) {
+                        $adminUser = User::where('role', 'admin')->orderBy('id', 'asc')->first();
+                        if ($adminUser) {
+                            $userIdForRegistration = $adminUser->id;
+                            Log::info("Using first admin ID {$userIdForRegistration} for new student registration.");
                         } else {
-                            StageCompetition::where('student_id', $studentToProcess->id)
-                                          ->where('stage_id', $stageId)
-                                          ->where('competition_id', $this->competition->id)
-                                          ->delete();
-                            Log::info("Usunięto/zaktualizowano wynik dla studenta ID: {$studentToProcess->id}, Etap ID: {$stageId}.");
+                            Log::error("CRITICAL: Cannot determine user_id for new registration (student ID {$student->id}). Skipping registration to competition.");
+                            $student = null;
                         }
                     }
+
+                    if ($student) {
+                        CompetitionRegistration::create([
+                            'competition_id' => $this->competition->id,
+                            'user_id'        => $userIdForRegistration,
+                            'student_id'     => $student->id,
+                        ]);
+                        Log::info("New student ID {$student->id} registered for competition ID {$this->competition->id} by user ID {$userIdForRegistration}.");
+                    }
+                } else {
+                    Log::warning("CompetitionsImport: Unhandled case for L.p. {$lp}. Initial count {$initialRegistrationsCount}. Skipping.");
+                    continue;
                 }
-            } else {
-                Log::warning("Import konkursu {$this->competition->id}: Nie udało się przetworzyć studenta/rejestracji dla wiersza Excel (indeks $excelRowIndex).");
+
+                if ($student && $this->stagesByNumber && $this->stagesByNumber->isNotEmpty()) {
+                    $logPrefix = $isNewStudentFlow ? "create" : "update";
+                    Log::info("Attempting to {$logPrefix} stage results for student ID {$student->id}.");
+                    foreach ($this->stagesByNumber as $stageNumber => $stageModel) {
+                        $stageSystemHeader = "{$stageNumber} ETAP";
+                        $resultExcelValue = $this->getRowValue($rowDataFromExcel, $stageSystemHeader);
+                        $finalResultValue = null;
+                        if ($resultExcelValue !== null) {
+                            $finalResultValue = ($resultExcelValue === '' || !is_numeric($resultExcelValue)) ? null : (int)$resultExcelValue;
+                            $updateOrCreateCriteria = [
+                                'competition_id' => $this->competition->id,
+                                'stage_id'       => $stageModel->id,
+                                'student_id'     => $student->id,
+                            ];
+                            $updateOrCreateValues = ['result' => $finalResultValue];
+                            Log::info("Data for StageCompetition::updateOrCreate (Student ID {$student->id}, Stage ID {$stageModel->id}): Criteria=" . json_encode($updateOrCreateCriteria) . ", Values=" . json_encode($updateOrCreateValues));
+                            StageCompetition::updateOrCreate($updateOrCreateCriteria, $updateOrCreateValues);
+                            Log::info("StageCompetition " . ($isNewStudentFlow ? "created" : "update/create executed") . " for student ID {$student->id}, Stage ID {$stageModel->id}.");
+                        }
+                    }
+                } elseif (!$student) {
+                    Log::warning("CompetitionsImport: Student object is null after attempting to find/create for L.p. {$lp}. Cannot process stage results.");
+                }
+            }
+            DB::commit();
+            Log::info("CompetitionsImport: DB::commit() executed successfully.");
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            DB::rollBack();
+            Log::error("CompetitionsImport: ValidationException. DB::rollBack() executed. Failures: " . json_encode($e->failures()) . " Message: " . $e->getMessage());
+            throw $e;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $errorContext = isset($rowDataFromExcel) ? json_encode($rowDataFromExcel) : 'Error occurred before or after row processing loop.';
+            Log::error("CompetitionsImport: Critical Throwable caught. DB::rollBack() executed. Message: " . $e->getMessage(), [
+                'trace_limit_10_lines' => implode("\n", array_slice(explode("\n", $e->getTraceAsString()), 0, 20)),
+                'row_data_at_error' => $errorContext
+            ]);
+            throw new \Exception("Import failed due to an unexpected error: " . $e->getMessage() . " (See logs for details)", 0, $e);
+        }
+    }
+
+    private function getRowValue(array $rowDataFromExcel, string $systemStandardHeaderName, $default = null)
+    {
+        $headerActuallyInUserExcelFile = null;
+
+        if (!empty($this->columnMappings)) {
+            $foundUserHeader = array_search($systemStandardHeaderName, $this->columnMappings, true);
+            if ($foundUserHeader !== false) {
+                $headerActuallyInUserExcelFile = $foundUserHeader;
             }
         }
+
+        if ($headerActuallyInUserExcelFile === null) {
+            $headerActuallyInUserExcelFile = $systemStandardHeaderName;
+        }
+
+        $maatwebsiteKey = null;
+        $asciiHeaderForSnake = null;
+
+        if (preg_match('/^(\d+)\sETAP$/i', $headerActuallyInUserExcelFile, $matches)) {
+            $maatwebsiteKey = strtolower($matches[1] . '_etap');
+        } elseif (strcasecmp($headerActuallyInUserExcelFile, 'Lp') == 0 || strcasecmp($headerActuallyInUserExcelFile, 'L.p.') == 0) {
+            $maatwebsiteKey = 'lp';
+        } else {
+            $asciiHeaderForSnake = Str::ascii($headerActuallyInUserExcelFile);
+            $maatwebsiteKey = Str::snake($asciiHeaderForSnake);
+        }
+
+        $debugFields = ['Imię ucznia', 'Nazwisko ucznia', 'Klasa', 'Nazwa szkoły', 'Adres szkoły', 'Oświadczenie', 'Nauczyciel', 'Rodzic', 'Kontakt', 'Lp'];
+        if (in_array($systemStandardHeaderName, $debugFields) || preg_match('/^\d+ ETAP$/i', $systemStandardHeaderName)) {
+            Log::info("getRowValue (FIELD '{$systemStandardHeaderName}'): UserExcelH='{$headerActuallyInUserExcelFile}', AsciiHForSnake='{$asciiHeaderForSnake}', MaatKey='{$maatwebsiteKey}'");
+            if (array_key_exists($maatwebsiteKey, $rowDataFromExcel)) {
+                Log::info("getRowValue (FIELD '{$systemStandardHeaderName}'): Klucz '{$maatwebsiteKey}' ZNALEZIONY. Wartość z Excela: " . json_encode($rowDataFromExcel[$maatwebsiteKey]) . ". Domyślna: " . json_encode($default));
+            } else {
+                 Log::warning("getRowValue (FIELD '{$systemStandardHeaderName}'): Klucz '{$maatwebsiteKey}' NIE ZNALEZIONY. Używam domyślnej: " . json_encode($default));
+            }
+        }
+
+        if (array_key_exists($maatwebsiteKey, $rowDataFromExcel)) {
+            return $rowDataFromExcel[$maatwebsiteKey];
+        }
+        return $default;
+    }
+
+    private function parseBoolean($value): bool
+    {
+        $result = false;
+        if (is_bool($value)) {
+            $result = $value;
+        } elseif ($value === null || $value === '') {
+            $result = false;
+        } elseif (is_string($value)) {
+            $val = strtolower(trim($value));
+            if (in_array($val, ['true', '1', 'yes', 'prawda', 'tak', 'on', 't'])) {
+                $result = true;
+            } else {
+                $result = false;
+            }
+        } elseif (is_numeric($value)) {
+            $result = ((int)$value === 1);
+        }
+        return $result;
     }
 
     public function rules(): array
     {
-        $rules = [];
+        $rules = [
+            'lp'                 => ['required', 'integer', 'min:1'],
+            'imie_ucznia'        => ['nullable', 'string', 'max:255'],
+            'nazwisko_ucznia'    => ['nullable', 'string', 'max:255'],
+            'klasa'              => ['nullable', 'max:255'],
+            'nazwa_szkoly'       => ['nullable', 'string', 'max:255'],
+            'adres_szkoly'       => ['nullable', 'string', 'max:1000'],
+            'oswiadczenie'       => ['nullable'],
+            'nauczyciel'         => ['nullable', 'string', 'max:255'],
+            'rodzic'             => ['nullable', 'string', 'max:255'],
+            'kontakt'            => ['nullable', 'string', 'max:255'],
+        ];
 
-        // Jeśli L.p. jest opcjonalne (bo mogą być nowe wpisy bez L.p.):
-        if (isset($this->internalKeyToFinalNormalizedFileHeader[self::KEY_LP])) {
-             $rules['*.' . $this->internalKeyToFinalNormalizedFileHeader[self::KEY_LP]] = 'nullable|integer|min:1';
-        }
-
-        // Jeśli L.p. nie ma, to imię, nazwisko, szkoła powinny być wymagane
-        // To jest trudniejsze do wyrażenia w standardowych regułach, można dodać walidację warunkową
-        // lub polegać na logice w collection(), która pomija wiersze bez wystarczających danych.
-
-        // Ogólne reguły formatu, jeśli pola są obecne:
-        if (isset($this->internalKeyToFinalNormalizedFileHeader[self::KEY_NAME])) {
-             $rules['*.' . $this->internalKeyToFinalNormalizedFileHeader[self::KEY_NAME]] = 'nullable|string|max:255';
-        }
-        if (isset($this->internalKeyToFinalNormalizedFileHeader[self::KEY_LAST_NAME])) {
-             $rules['*.' . $this->internalKeyToFinalNormalizedFileHeader[self::KEY_LAST_NAME]] = 'nullable|string|max:255';
-        }
-        if (isset($this->internalKeyToFinalNormalizedFileHeader[self::KEY_SCHOOL])) {
-             $rules['*.' . $this->internalKeyToFinalNormalizedFileHeader[self::KEY_SCHOOL]] = 'nullable|string|max:255';
-        }
-        // ... (reszta pól jako nullable|typ|...)
-
-        // Przykład wymagania imienia i nazwiska, jeśli L.p. nie ma (bardziej zaawansowane):
-        // $rules['*.' . $this->internalKeyToFinalNormalizedFileHeader[self::KEY_NAME]] = [
-        //     Rule::requiredIf(fn ($input) => empty($input[$this->internalKeyToFinalNormalizedFileHeader[self::KEY_LP]])),
-        //     'nullable',
-        //     'string',
-        //     'max:255'
-        // ];
-        // Potrzebowałbyś `use Illuminate\Validation\Rule;`
-
-        // Prostsze podejście do reguł na razie:
-        if (isset($this->internalKeyToFinalNormalizedFileHeader[self::KEY_NAME])) {
-             $rules['*.' . $this->internalKeyToFinalNormalizedFileHeader[self::KEY_NAME]] = 'required_without_all:' . ($this->internalKeyToFinalNormalizedFileHeader[self::KEY_LP] ?? 'non_existent_lp') . '|nullable|string|max:255';
-        }
-        if (isset($this->internalKeyToFinalNormalizedFileHeader[self::KEY_LAST_NAME])) {
-             $rules['*.' . $this->internalKeyToFinalNormalizedFileHeader[self::KEY_LAST_NAME]] = 'required_without_all:' . ($this->internalKeyToFinalNormalizedFileHeader[self::KEY_LP] ?? 'non_existent_lp') . '|nullable|string|max:255';
-        }
-         if (isset($this->internalKeyToFinalNormalizedFileHeader[self::KEY_SCHOOL])) {
-             $rules['*.' . $this->internalKeyToFinalNormalizedFileHeader[self::KEY_SCHOOL]] = 'required_without_all:' . ($this->internalKeyToFinalNormalizedFileHeader[self::KEY_LP] ?? 'non_existent_lp') . '|nullable|string|max:255';
-        }
-
-
-        $optionalStringFields = [self::KEY_CLASS, self::KEY_SCHOOL_ADDRESS, self::KEY_STATEMENT, self::KEY_TEACHER, self::KEY_GUARDIAN, self::KEY_CONTACT];
-        foreach ($optionalStringFields as $internalKey) {
-            if (isset($this->internalKeyToFinalNormalizedFileHeader[$internalKey])) {
-                 $rules['*.' . $this->internalKeyToFinalNormalizedFileHeader[$internalKey]] = 'nullable|string|max:255';
-            }
-        }
-
-        foreach ($this->internalStageKeysMapping as $internalStageKey => $stageId) {
-            if (isset($this->internalKeyToFinalNormalizedFileHeader[$internalStageKey])) {
-                $rules['*.' . $this->internalKeyToFinalNormalizedFileHeader[$internalStageKey]] = 'nullable|numeric';
+        if ($this->stagesByNumber) {
+            foreach ($this->stagesByNumber as $stageNumber => $stageModel) {
+                $stageMaatwebsiteKey = strtolower($stageNumber . '_etap');
+                $rules[$stageMaatwebsiteKey] = ['nullable', 'integer', 'min:0'];
             }
         }
         return $rules;
     }
 
-
-
-    public function headingRow(): int
+    public function customValidationMessages()
     {
-        return 1;
+        $messages = [];
+        $messages['lp.required'] = 'Kolumna "Lp" jest wymagana.';
+        $messages['lp.integer'] = 'Wartość w kolumnie "Lp" musi być liczbą całkowitą.';
+        $messages['lp.min'] = 'Wartość w kolumnie "Lp" musi być co najmniej 1.';
+
+        if ($this->stagesByNumber) {
+            foreach ($this->stagesByNumber as $stageNumber => $stageModel) {
+                $stageMaatwebsiteKey = strtolower($stageNumber . '_etap');
+                $messages["{$stageMaatwebsiteKey}.integer"] = "Wynik dla etapu {$stageNumber} musi być liczbą całkowitą.";
+                $messages["{$stageMaatwebsiteKey}.min"] = "Wynik dla etapu {$stageNumber} nie może być ujemny.";
+            }
+        }
+        return $messages;
     }
 }
