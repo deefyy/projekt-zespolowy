@@ -6,8 +6,8 @@
   <div class="py-6">
     <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 bg-white p-6 shadow rounded">
       {{-- dane konkursu --}}
-      <h1 class="text-2xl font-bold mb-2">{{ $competition->name }}</h1>
-      <p class="text-gray-700 mb-2">{{ $competition->description }}</p>
+      <h1 class="text-2xl font-bold mb-2 ">{{ $competition->name }}</h1>
+      <p class="text-gray-700 mb-2 break-words">{{ $competition->description }}</p>
       <p class="text-sm text-gray-500 mb-2">
         Liczba etapów: {{ $competition->stages_count }}
       </p>

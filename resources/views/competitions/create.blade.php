@@ -36,8 +36,12 @@
                 <div class="mb-4">
                     <label class="block font-medium text-sm text-gray-700">Opis</label>
                     <textarea name="description"
+                              id="description"
                               class="form-input rounded-md shadow-sm mt-1 block w-full"
+                              maxlength="255"
+                              oninput="updateDescCount()"
                               required>{{ old('description') }}</textarea>
+                    <p class="text-xs text-gray-500 mt-1"><span id="desc_count">0</span>/255 znaków</p>
                 </div>
 
                 {{-- Ilość etapów --}}
@@ -90,4 +94,16 @@
             </form>
         </div>
     </div>
+
+    {{-- ▶︎ JS licznik znaków ◀︎ --}}
+    <script>
+      function updateDescCount () {
+        const textarea = document.getElementById('description');
+        const counter  = document.getElementById('desc_count');
+        counter.textContent = textarea.value.length;
+      }
+
+      // zainicjuj po załadowaniu strony (old())
+      document.addEventListener('DOMContentLoaded', updateDescCount);
+    </script>
 </x-app-layout>
