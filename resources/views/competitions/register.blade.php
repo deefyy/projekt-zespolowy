@@ -8,7 +8,7 @@
   <div class="py-6">
     <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 bg-white p-6 shadow rounded">
 
-      <form method="POST" action="{{ route('competitions.registerStudents', $competition) }}">
+      <form id="students-form" method="POST" action="{{ route('competitions.registerStudents', $competition) }}">
         @csrf
 
         {{-- ▶︎ Dane szkoły / kontakt ◀︎ --}}
@@ -22,16 +22,26 @@
           <input type="text" name="school_address" class="form-input w-full" required>
         </div>
 
-        <div class="mb-2">
+        {{-- ▶︎ Nauczyciel / Opiekun (opcjonalnie) ◀︎ --}}
+        <div class="mb-2 flex items-center space-x-3">
+          <input type="checkbox" id="toggle_teacher" class="form-checkbox">
+          <label for="toggle_teacher" class="text-sm">Dodaj nauczyciela</label>
+        </div>
+        <div class="mb-2 hidden" id="teacher_wrapper">
           <label class="block text-sm font-medium">Nauczyciel</label>
-          <input type="text" name="teacher" class="form-input w-full">
+          <input type="text" name="teacher" id="teacher_input" class="form-input w-full" disabled>
         </div>
 
-        <div class="mb-2">
+        <div class="mb-2 flex items-center space-x-3">
+          <input type="checkbox" id="toggle_guardian" class="form-checkbox">
+          <label for="toggle_guardian" class="text-sm">Dodaj opiekuna</label>
+        </div>
+        <div class="mb-2 hidden" id="guardian_wrapper">
           <label class="block text-sm font-medium">Opiekun</label>
-          <input type="text" name="guardian" class="form-input w-full">
+          <input type="text" name="guardian" id="guardian_input" class="form-input w-full" disabled>
         </div>
 
+        {{-- ▶︎ Kontakt (e-mail lub tel.) ◀︎ --}}
         <div class="mb-2">
           <label class="block text-sm font-medium">Kontakt (e-mail lub tel.)</label>
           <input type="text" name="contact" class="form-input w-full" required>
@@ -39,7 +49,12 @@
 
         {{-- ▶︎ Uczniowie ◀︎ --}}
         <div id="students-wrapper">
-          <div class="student-item mb-4 border p-4 rounded">
+          <div class="student-item mb-4 border p-4 rounded relative">
+            <button
+              type="button"
+              class="remove-student absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center hidden"
+              aria-label="Usuń ucznia"
+            >&times;</button>
 
             {{-- Imię --}}
             <div class="mb-2">
@@ -95,28 +110,65 @@
     </div>
   </div>
 
-  {{-- ▶︎ Klonowanie kolejnych uczniów ◀︎ --}}
+  {{-- ▶︎ Skrypty ◀︎ --}}
   <script>
-    let idx = 1;
-    document.getElementById('add-student').addEventListener('click', () => {
-      const wrapper   = document.getElementById('students-wrapper');
-      const prototype = document.querySelector('.student-item');
-      const item      = prototype.cloneNode(true);
+    function setupToggle(checkId, wrapperId, inputId) {
+      const check   = document.getElementById(checkId);
+      const wrapper = document.getElementById(wrapperId);
+      const input   = document.getElementById(inputId);
 
-      item.querySelectorAll('input, select').forEach(el => {
-        if (el.name && el.name.startsWith('students[')) {
-          el.name = el.name.replace(/\d+/, idx);
-        }
-        if (el.tagName === 'SELECT') {
-          el.selectedIndex = 0;  // reset <select>
-        } else if (el.type === 'checkbox') {
-          el.checked = false;   // reset checkbox
+      check.addEventListener('change', () => {
+        if (check.checked) {
+          wrapper.classList.remove('hidden');
+          input.disabled = false;
+          input.focus();
         } else {
-          el.value = '';        // reset input text
+          wrapper.classList.add('hidden');
+          input.disabled = true;
+          input.value = '';
         }
       });
+    }
 
+    setupToggle('toggle_teacher',  'teacher_wrapper',  'teacher_input');
+    setupToggle('toggle_guardian', 'guardian_wrapper', 'guardian_input');
+
+    const wrapper = document.getElementById('students-wrapper');
+    const addBtn  = document.getElementById('add-student');
+    let idx = 1;
+
+    function resetFields(item) {
+      item.querySelectorAll('input, select').forEach(el => {
+        if (el.name && el.name.startsWith('students[')) {
+          el.name = el.name.replace(/students\[\d+]/, `students[${idx}]`);
+        }
+
+        if (el.tagName === 'SELECT') {
+          el.selectedIndex = 0;
+        } else if (el.type === 'checkbox') {
+          el.checked = false;
+        } else {
+          el.value = '';
+        }
+      });
+    }
+
+    function enableRemove(item) {
+      const btn = item.querySelector('.remove-student');
+      btn.classList.remove('hidden');
+      btn.addEventListener('click', () => item.remove());
+    }
+
+    wrapper.querySelector('.student-item .remove-student').classList.add('hidden');
+
+    addBtn.addEventListener('click', () => {
+      const prototype = wrapper.querySelector('.student-item');
+      const item = prototype.cloneNode(true);
+
+      resetFields(item);
       wrapper.appendChild(item);
+      enableRemove(item);
+
       idx++;
     });
   </script>
