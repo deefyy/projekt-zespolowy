@@ -24,12 +24,20 @@
 
                 {{-- Nazwa konkursu --}}
                 <div class="mb-4">
-                    <label class="block font-medium text-sm text-gray-700">Nazwa konkursu</label>
+                    <label class="block font-medium text-sm text-gray-700">
+                        Nazwa konkursu
+                    </label>
                     <input type="text"
-                           name="name"
-                           value="{{ old('name') }}"
-                           class="form-input rounded-md shadow-sm mt-1 block w-full"
-                           required>
+                        name="name"
+                        id="name"
+                        maxlength="255"
+                        oninput="updateNameCount()"
+                        value="{{ old('name') }}"
+                        class="form-input rounded-md shadow-sm mt-1 block w-full"
+                        required>
+                    <p class="text-xs text-gray-500 mt-1">
+                        <span id="name_count">0</span>/255 znaków
+                    </p>
                 </div>
 
                 {{-- Opis --}}
@@ -55,12 +63,15 @@
                            required>
                 </div>
 
+                @php($today = now()->toDateString())
+
                 {{-- Data rozpoczęcia --}}
                 <div class="mb-4">
                     <label class="block font-medium text-sm text-gray-700">Data rozpoczęcia</label>
                     <input type="date"
                            name="start_date"
                            value="{{ old('start_date') }}"
+                           min="{{ $today }}"
                            class="form-input rounded-md shadow-sm mt-1 block w-full"
                            required>
                 </div>
@@ -71,6 +82,7 @@
                     <input type="date"
                            name="end_date"
                            value="{{ old('end_date') }}"
+                           min="{{ $today }}"
                            class="form-input rounded-md shadow-sm mt-1 block w-full"
                            required>
                 </div>
@@ -81,6 +93,7 @@
                     <input type="date"
                            name="registration_deadline"
                            value="{{ old('registration_deadline') }}"
+                           min="{{ $today }}"
                            class="form-input rounded-md shadow-sm mt-1 block w-full"
                            required>
                 </div>
@@ -102,8 +115,14 @@
         const counter  = document.getElementById('desc_count');
         counter.textContent = textarea.value.length;
       }
+      function updateNameCount () {
+        const input = document.getElementById('name');
+        document.getElementById('name_count').textContent = input.value.length;
+      }
 
-      // zainicjuj po załadowaniu strony (old())
-      document.addEventListener('DOMContentLoaded', updateDescCount);
+      document.addEventListener('DOMContentLoaded', () => {
+        updateDescCount();
+        updateNameCount();
+      });
     </script>
 </x-app-layout>

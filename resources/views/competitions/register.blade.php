@@ -1,6 +1,6 @@
 <x-app-layout>
   <x-slot name="header">
-    <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+    <h2 class="font-semibold text-xl text-gray-800 leading-tight break-words">
       Rejestracja uczniów na: {{ $competition->name }}
     </h2>
   </x-slot>
@@ -14,12 +14,14 @@
         {{-- ▶︎ Dane szkoły / kontakt ◀︎ --}}
         <div class="mb-2">
           <label class="block text-sm font-medium">Szkoła</label>
-          <input type="text" name="school" class="form-input w-full" required>
+          <input type="text" name="school" maxlength="255" class="form-input w-full char-field" required>
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
 
         <div class="mb-2">
           <label class="block text-sm font-medium">Adres szkoły</label>
-          <input type="text" name="school_address" class="form-input w-full" required>
+          <input type="text" name="school_address" maxlength="255" class="form-input w-full char-field" required>
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
 
         {{-- ▶︎ Nauczyciel / Opiekun (opcjonalnie) ◀︎ --}}
@@ -29,7 +31,8 @@
         </div>
         <div class="mb-2 hidden" id="teacher_wrapper">
           <label class="block text-sm font-medium">Nauczyciel</label>
-          <input type="text" name="teacher" id="teacher_input" class="form-input w-full" disabled>
+          <input type="text" name="teacher" id="teacher_input" maxlength="255" class="form-input w-full char-field" disabled>
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
 
         <div class="mb-2 flex items-center space-x-3">
@@ -38,13 +41,15 @@
         </div>
         <div class="mb-2 hidden" id="guardian_wrapper">
           <label class="block text-sm font-medium">Opiekun</label>
-          <input type="text" name="guardian" id="guardian_input" class="form-input w-full" disabled>
+          <input type="text" name="guardian" id="guardian_input" maxlength="255" class="form-input w-full char-field" disabled>
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
 
         {{-- ▶︎ Kontakt (e-mail lub tel.) ◀︎ --}}
         <div class="mb-2">
           <label class="block text-sm font-medium">Kontakt (e-mail lub tel.)</label>
-          <input type="text" name="contact" class="form-input w-full" required>
+          <input type="text" name="contact" maxlength="255" class="form-input w-full char-field" required>
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
 
         {{-- ▶︎ Uczniowie ◀︎ --}}
@@ -59,13 +64,15 @@
             {{-- Imię --}}
             <div class="mb-2">
               <label class="block text-sm font-medium">Imię</label>
-              <input type="text" name="students[0][name]" class="form-input w-full" required>
+              <input type="text" name="students[0][name]" maxlength="255" class="form-input w-full char-field" required>
+              <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
             </div>
 
             {{-- Nazwisko --}}
             <div class="mb-2">
               <label class="block text-sm font-medium">Nazwisko</label>
-              <input type="text" name="students[0][last_name]" class="form-input w-full" required>
+              <input type="text" name="students[0][last_name]" maxlength="255" class="form-input w-full char-field" required>
+              <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
             </div>
 
             {{-- Klasa – SELECT --}}
@@ -88,7 +95,6 @@
                      required>
               <span class="text-sm">Wyrażam zgodę na przetwarzanie danych osobowych</span>
             </div>
-
           </div>
         </div>
 
@@ -126,12 +132,27 @@
           wrapper.classList.add('hidden');
           input.disabled = true;
           input.value = '';
+          updateCounter(input);
         }
       });
     }
 
     setupToggle('toggle_teacher',  'teacher_wrapper',  'teacher_input');
     setupToggle('toggle_guardian', 'guardian_wrapper', 'guardian_input');
+
+    function updateCounter(el) {
+      const wrapper = el.closest('div');
+      const counter = wrapper ? wrapper.querySelector('.count') : null;
+      if (counter) counter.textContent = el.value.length;
+    }
+
+    document.addEventListener('input', (e) => {
+      if (e.target.classList.contains('char-field')) {
+        updateCounter(e.target);
+      }
+    });
+
+    document.querySelectorAll('.char-field').forEach(updateCounter);
 
     const wrapper = document.getElementById('students-wrapper');
     const addBtn  = document.getElementById('add-student');
@@ -149,6 +170,7 @@
           el.checked = false;
         } else {
           el.value = '';
+          if (el.classList.contains('char-field')) updateCounter(el);
         }
       });
     }

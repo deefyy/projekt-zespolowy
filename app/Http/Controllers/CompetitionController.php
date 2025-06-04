@@ -25,18 +25,25 @@ class CompetitionController extends Controller
         return view('competitions.index', compact('competitions'));
     }
 
-    public function show(Competition $competition)
+    public function show(Request $request, Competition $competition)
     {
+        $perPage = $request->integer('perPage', 10);
+
         $userRegistrations = collect();
         $competition->load('stages');
         if (auth()->check()) {
             if (auth()->user()->role === 'admin' || auth()->user()->role === 'organizator') {
-                $userRegistrations = $competition->registrations()->with('student')->get();
+                $userRegistrations = $competition->registrations()
+                ->with('student')
+                ->paginate($perPage)
+                ->withQueryString();
             } else {
                 $userRegistrations = $competition->registrations()
                     ->where('user_id', auth()->id())
                     ->with(['student.stageCompetitions'])
-                    ->get();
+                    ->paginate($perPage)
+                    ->withQueryString();
+                    
             }
         }
 

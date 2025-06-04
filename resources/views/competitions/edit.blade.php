@@ -23,23 +23,33 @@
 
         {{-- Nazwa --}}
         <div class="mb-4">
-          <label for="name" class="block text-sm font-medium text-gray-700">Nazwa</label>
+          <label for="name" class="block text-sm font-medium text-gray-700">
+            Nazwa
+          </label>
           <input type="text"
                  name="name"
                  id="name"
+                 maxlength="255"
+                 oninput="updateNameCount()"
                  value="{{ old('name', $competition->name) }}"
                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                  required>
+          <p class="text-xs text-gray-500 mt-1"><span id="name_count">0</span>/255 znaków</p>
         </div>
 
         {{-- Opis --}}
         <div class="mb-4">
-          <label for="description" class="block text-sm font-medium text-gray-700">Opis</label>
+          <label for="description" class="block text-sm font-medium text-gray-700">
+            Opis
+          </label>
           <textarea name="description"
                     id="description"
                     rows="4"
+                    maxlength="255"
+                    oninput="updateDescCount()"
                     class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                     required>{{ old('description', $competition->description) }}</textarea>
+          <p class="text-xs text-gray-500 mt-1"><span id="desc_count">0</span>/255 znaków</p>
         </div>
 
         {{-- Ilość etapów --}}
@@ -96,4 +106,22 @@
       </form>
     </div>
   </div>
+
+  {{-- ▶︎ JS liczniki znaków ◀︎ --}}
+  <script>
+    function updateDescCount () {
+      const textarea = document.getElementById('description');
+      document.getElementById('desc_count').textContent = textarea.value.length;
+    }
+
+    function updateNameCount () {
+      const input = document.getElementById('name');
+      document.getElementById('name_count').textContent = input.value.length;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateDescCount();
+      updateNameCount();
+    });
+  </script>
 </x-app-layout>
