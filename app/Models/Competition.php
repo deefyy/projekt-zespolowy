@@ -16,6 +16,7 @@ class Competition extends Model
         'user_id',
         'stages_count',
         'registration_deadline',
+        'poster_path',
     ];
 
     public function user() {

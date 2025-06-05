@@ -15,24 +15,68 @@
                 <h3 class="text-3xl font-bold text-blue-900 mb-6">Najbliższe wydarzenia</h3>
 
                 @forelse($upcomingCompetitions as $competition)
-                    <article class="bg-white border-l-4 border-blue-900 p-5 rounded-lg shadow mb-6">
-                        <h4 class="text-2xl font-semibold text-blue-900 break-words">{{ $competition->name }}</h4>
+                    <article class="bg-white rounded-lg shadow hover:shadow-lg transition mb-6 overflow-hidden">
 
-                        <p class="text-gray-600 text-sm mb-2">
-                            📅 {{ \Carbon\Carbon::parse($competition->start_date)->format('d.m.Y') }}
-                            @if($competition->end_date)
-                                – {{ \Carbon\Carbon::parse($competition->end_date)->format('d.m.Y') }}
-                            @endif
-                        </p>
+                        @if($competition->poster_path)
+                            {{-- FLEX ▸ treść | obraz (desktop) --}}
+                            <div class="flex flex-col md:flex-row">
 
-                        <p class="text-gray-800 mb-4">
-                            {{ \Illuminate\Support\Str::limit(strip_tags($competition->description), 100, '...') }}
-                        </p>
+                                {{-- TREŚĆ --------------------------------------------------}}
+                                <div class="p-6 flex-1">
+                                    <h4 class="text-2xl font-semibold text-blue-900 mb-1">
+                                        {{ $competition->name }}
+                                    </h4>
 
-                        <a href="{{ route('competitions.show', $competition) }}"
-                           class="inline-block bg-blue-800 hover:bg-blue-900 text-white text-sm font-medium py-2 px-4 rounded">
-                            Czytaj dalej…
-                        </a>
+                                    <p class="text-gray-600 text-sm mb-2">
+                                        📅 {{ \Carbon\Carbon::parse($competition->start_date)->format('d.m.Y') }}
+                                        @if($competition->end_date)
+                                            – {{ \Carbon\Carbon::parse($competition->end_date)->format('d.m.Y') }}
+                                        @endif
+                                    </p>
+
+                                    <p class="text-gray-800 mb-4 line-clamp-3">
+                                        {{ \Illuminate\Support\Str::limit(strip_tags($competition->description), 120, '…') }}
+                                    </p>
+
+                                    <a href="{{ route('competitions.show', $competition) }}"
+                                       class="inline-block bg-blue-800 hover:bg-blue-900 text-white text-sm font-medium py-2 px-4 rounded">
+                                        Czytaj dalej…
+                                    </a>
+                                </div>
+
+                                {{-- MINIATURA 16 : 9  (po PRAWEJ) --}}
+                                <div class="md:w-64 flex-shrink-0">
+                                    <div class="relative w-full pb-[56.25%]">
+                                        <img src="{{ Storage::url($competition->poster_path) }}"
+                                             alt="Plakat {{ $competition->name }}"
+                                             class="absolute inset-0 w-full h-full object-cover">
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            {{-- bez plakatu – tylko treść --}}
+                            <div class="p-6">
+                                <h4 class="text-2xl font-semibold text-blue-900 break-words mb-1">
+                                    {{ $competition->name }}
+                                </h4>
+
+                                <p class="text-gray-600 text-sm mb-2">
+                                    📅 {{ \Carbon\Carbon::parse($competition->start_date)->format('d.m.Y') }}
+                                    @if($competition->end_date)
+                                        – {{ \Carbon\Carbon::parse($competition->end_date)->format('d.m.Y') }}
+                                    @endif
+                                </p>
+
+                                <p class="text-gray-800 mb-4 line-clamp-3">
+                                    {{ \Illuminate\Support\Str::limit(strip_tags($competition->description), 120, '…') }}
+                                </p>
+
+                                <a href="{{ route('competitions.show', $competition) }}"
+                                   class="inline-block bg-blue-800 hover:bg-blue-900 text-white text-sm font-medium py-2 px-4 rounded">
+                                    Czytaj dalej…
+                                </a>
+                            </div>
+                        @endif
                     </article>
                 @empty
                     <p class="text-gray-700">Brak nadchodzących wydarzeń.</p>

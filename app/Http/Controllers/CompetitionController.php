@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -57,41 +57,49 @@ class CompetitionController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name'                  => 'required|string',
-            'description'           => 'required|string',
-            'start_date'            => 'required|date',
-            'end_date'              => 'required|date|after_or_equal:start_date',
-            'registration_deadline' => 'required|date|before_or_equal:start_date',
-            'stages_count'          => 'required|integer|min:1|max:10', 
-        ]);
+{
+    $validated = $request->validate([
+        'name'                  => 'required|string',
+        'description'           => 'required|string',
+        'start_date'            => 'required|date',
+        'end_date'              => 'required|date|after_or_equal:start_date',
+        'registration_deadline' => 'required|date|before_or_equal:start_date',
+        'stages_count'          => 'required|integer|min:1|max:10',
+        'poster'                => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+    ]);
 
-        $validated['user_id'] = $request->user()->id;
-
-        $competition = Competition::create($validated);
-
-        // Dodawanie etapów na podstawie 'stages_count'
-        for ($i = 1; $i <= $validated['stages_count']; $i++) {
-            Stage::create([
-                'stage'            => $i,
-                'date'            => now()->addWeeks($i),
-                'competition_id'  => $competition->id,
-            ]);
-        }
-
-        Forum::create([
-            'topic'          => $competition->name,
-            'added_date'     => now(),
-            'description'    => $competition->description,
-            'competition_id' => $competition->id,
-        ]);
-
-        auth()->user()->notify(new CompetitionCreatedNotification($competition));
-
-        return redirect()->route('competitions.index')->with('success', 'Konkurs został dodany!');
+    /* 1️⃣ zapis pliku (jeśli jest) */
+    if ($request->hasFile('poster')) {
+        // posters/20250603_abcdef.jpg  – na dysku domyślnym
+        $path = $request->file('poster')->store('posters');
+        $validated['poster_path'] = $path;
     }
 
+    /* 2️⃣ pozostała logika – bez zmian */
+    $validated['user_id'] = $request->user()->id;
+    $competition = Competition::create($validated);
+
+    for ($i = 1; $i <= $validated['stages_count']; $i++) {
+        Stage::create([
+            'stage'          => $i,
+            'date'           => now()->addWeeks($i),
+            'competition_id' => $competition->id,
+        ]);
+    }
+
+    Forum::create([
+        'topic'          => $competition->name,
+        'added_date'     => now(),
+        'description'    => $competition->description,
+        'competition_id' => $competition->id,
+    ]);
+
+    auth()->user()->notify(new CompetitionCreatedNotification($competition));
+
+    return redirect()
+        ->route('competitions.index')
+        ->with('success', 'Konkurs został dodany!');
+}
     public function edit(Competition $competition)
     {
         if (auth()->user()->role !== 'admin' && auth()->user()->role !== 'organizator') {
@@ -116,8 +124,14 @@ class CompetitionController extends Controller
             'end_date'              => 'required|date|after_or_equal:start_date',
             'registration_deadline' => 'required|date|before_or_equal:end_date',
             'stages_count'          => 'required|integer|min:1|max:10',
-        ]);
+            'poster' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
 
+        ]);
+            if ($request->hasFile('poster')) {
+                // (opcjonalnie) usuń stary plik: Storage::delete($competition->poster_path);
+                $path = $request->file('poster')->store('posters');
+                $validated['poster_path'] = $path;
+            }
         // Aktualizacja danych konkursu
         $competition->update($validated);
 

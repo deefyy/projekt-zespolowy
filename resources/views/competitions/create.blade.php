@@ -19,7 +19,10 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('competitions.store') }}">
+            {{-- ⬇︎  DODAJ enctype="multipart/form-data" --}}
+            <form method="POST"
+                  action="{{ route('competitions.store') }}"
+                  enctype="multipart/form-data">
                 @csrf
 
                 {{-- Nazwa konkursu --}}
@@ -50,6 +53,17 @@
                               oninput="updateDescCount()"
                               required>{{ old('description') }}</textarea>
                     <p class="text-xs text-gray-500 mt-1"><span id="desc_count">0</span>/255 znaków</p>
+                </div>
+
+                {{-- Plakat (JPG/PNG/WEBP) --}}
+                <div class="mb-4">
+                    <label class="block font-medium text-sm text-gray-700">
+                        Plakat (max 2&nbsp;MB)
+                    </label>
+                    <input type="file"
+                           name="poster"
+                           accept="image/*"
+                           class="form-input rounded-md shadow-sm mt-1 block w-full">
                 </div>
 
                 {{-- Ilość etapów --}}
