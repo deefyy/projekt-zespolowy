@@ -18,8 +18,8 @@
 
             @foreach ($competitions as $competition)
                 <a href="{{ route('competitions.show', $competition) }}" class="block bg-white shadow-lg rounded-lg p-5 mb-4 hover:shadow-xl transition">
-                    <h3 class="text-xl font-bold text-[#002d62] mb-2">{{ $competition->name }}</h3>
-                    <p class="text-gray-700 mb-3">{{ $competition->description }}</p>
+                    <h3 class="text-xl font-bold text-[#002d62] mb-2 break-words">{{ $competition->name }}</h3>
+                    <p class="text-gray-700 mb-3 break-words">{{ $competition->description }}</p>
                     <p class="text-sm text-gray-500 mb-1">
                         📅 Od: {{ $competition->start_date }} do: {{ $competition->end_date }}
                     </p>

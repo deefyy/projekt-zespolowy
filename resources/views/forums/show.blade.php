@@ -6,7 +6,7 @@
             <a href="{{ route('forums.index') }}" class="text-blue-600 hover:underline">&larr; Wróć do listy postów</a>
             <h1 class="text-2xl font-bold mt-2">{{ $forum->title }}</h1>
             <!-- Możemy wyświetlić nazwę konkursu i datę dodania posta -->
-            <p class="text-sm text-gray-600">Konkurs: {{ $forum->competition->name }} | Dodano: {{ $forum->created_at->format('Y-m-d H:i') }}</p>
+            <p class="text-sm text-gray-600 break-words">Konkurs: {{ $forum->competition->name }} | Dodano: {{ $forum->created_at->format('Y-m-d H:i') }}</p>
             @if($forum->content ?? false)
                 <div class="mt-4 prose">{{ $forum->content }}</div>
             @endif
@@ -18,7 +18,7 @@
 
             @foreach($forum->comments->sortBy('created_at') as $comment)
                 <div class="mb-4 p-4 bg-white rounded-md shadow">
-                    <p class="text-gray-800">{{ $comment->content }}</p>
+                    <p class="text-gray-800 break-words">{{ $comment->content }}</p>
                     <p class="text-sm text-gray-500">Dodano: {{ $comment->created_at->format('Y-m-d H:i') }}</p>
                     @if(Auth::id() === $comment->user_id)
                         <!-- Przyciski edycji (dla autora komentarza) -->

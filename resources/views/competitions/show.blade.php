@@ -6,8 +6,8 @@
   <div class="py-6">
     <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 bg-white p-6 shadow rounded">
       {{-- dane konkursu --}}
-      <h1 class="text-2xl font-bold mb-2">{{ $competition->name }}</h1>
-      <p class="text-gray-700 mb-2">{{ $competition->description }}</p>
+      <h1 class="text-2xl font-bold mb-2 break-words">{{ $competition->name }}</h1>
+      <p class="text-gray-700 mb-2 break-words">{{ $competition->description }}</p>
       <p class="text-sm text-gray-500 mb-2">
         Liczba etapów: {{ $competition->stages_count }}
       </p>
@@ -162,6 +162,29 @@
                                   @endforeach
                               </tbody>
                           </table>
+                      </div>
+                      {{-- selektor liczby wierszy na stronę --}}
+                      <form method="GET" class="mb-4">
+                          {{-- zachowuj inne parametry wyszukiwania, jeśli kiedyś dodasz --}}
+                          @foreach (request()->except('perPage', 'page') as $key => $value)
+                              <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                          @endforeach
+
+                          <label class="text-sm font-medium text-gray-700">
+                              Pokaż
+                              <select name="perPage" class="border-gray-300 rounded mx-1"
+                                      onchange="this.form.submit()">
+                                  @foreach([10, 20, 50, 100] as $size)
+                                      <option value="{{ $size }}" {{ request('perPage', 10) == $size ? 'selected' : '' }}>
+                                          {{ $size }}
+                                      </option>
+                                  @endforeach
+                              </select>
+                              wpisów na stronę
+                          </label>
+                      </form>
+                      <div class="mt-4">
+                        {{ $userRegistrations->links() }}
                       </div>
                   </div>
               @endif

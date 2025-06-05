@@ -28,9 +28,12 @@
           <label class="block text-sm font-medium text-gray-700">Imię</label>
           <input type="text"
                  name="name"
+                 maxlength="255"
+                 oninput="updateCounter(this)"
                  value="{{ old('name', $student->name) }}"
-                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm char-field"
                  required>
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
 
         {{-- Nazwisko --}}
@@ -38,26 +41,27 @@
           <label class="block text-sm font-medium text-gray-700">Nazwisko</label>
           <input type="text"
                  name="last_name"
+                 maxlength="255"
+                 oninput="updateCounter(this)"
                  value="{{ old('last_name', $student->last_name) }}"
-                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm char-field"
                  required>
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
 
         {{-- Klasa – SELECT zamiast input --}}
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700">Klasa</label>
-            <select name="class"
-                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    required>
-                <option value="" disabled>– wybierz –</option>
-
-                @foreach(($classes ?? []) as $c)
-                    <option value="{{ $c }}"
-                            {{ old('class', $student->class) == $c ? 'selected' : '' }}>
-                        {{ $c }}
-                    </option>
-                @endforeach
-            </select>
+          <select name="class"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  required>
+              <option value="" disabled>– wybierz –</option>
+              @foreach(($classes ?? []) as $c)
+                  <option value="{{ $c }}" {{ old('class', $student->class) == $c ? 'selected' : '' }}>
+                      {{ $c }}
+                  </option>
+              @endforeach
+          </select>
         </div>
 
         {{-- Szkoła --}}
@@ -65,9 +69,12 @@
           <label class="block text-sm font-medium text-gray-700">Szkoła</label>
           <input type="text"
                  name="school"
+                 maxlength="255"
+                 oninput="updateCounter(this)"
                  value="{{ old('school', $student->school) }}"
-                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm char-field"
                  required>
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
         
         {{-- Adres Szkoły --}}
@@ -75,8 +82,11 @@
           <label class="block text-sm font-medium text-gray-700">Adres Szkoły</label>
           <input type="text"
                  name="school_address"
+                 maxlength="255"
+                 oninput="updateCounter(this)"
                  value="{{ old('school_address', $student->school_address) }}"
-                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm char-field">
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
 
         {{-- Nauczyciel --}}
@@ -84,8 +94,11 @@
           <label class="block text-sm font-medium text-gray-700">Nauczyciel</label>
           <input type="text"
                  name="teacher"
+                 maxlength="255"
+                 oninput="updateCounter(this)"
                  value="{{ old('teacher', $student->teacher) }}"
-                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm char-field">
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
 
         {{-- Opiekun --}}
@@ -93,8 +106,11 @@
           <label class="block text-sm font-medium text-gray-700">Opiekun</label>
           <input type="text"
                  name="guardian"
+                 maxlength="255"
+                 oninput="updateCounter(this)"
                  value="{{ old('guardian', $student->guardian) }}"
-                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm char-field">
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
 
         {{-- Kontakt --}}
@@ -102,9 +118,12 @@
           <label class="block text-sm font-medium text-gray-700">Kontakt (e-mail lub tel.)</label>
           <input type="text"
                  name="contact"
+                 maxlength="255"
+                 oninput="updateCounter(this)"
                  value="{{ old('contact', $student->contact) }}"
-                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm char-field"
                  required>
+          <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
         </div>
 
         {{-- Zgoda RODO --}}
@@ -143,4 +162,17 @@
       @endif
     </div>
   </div>
+
+ {{-- ▼ Skrypt liczników znaków ▼ --}}
+  <script>
+    function updateCounter(el) {
+      const wrapper = el.closest('div');
+      const counter = wrapper ? wrapper.querySelector('.count') : null;
+      if (counter) counter.textContent = el.value.length;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.char-field').forEach(updateCounter);
+    });
+  </script>
 </x-app-layout>

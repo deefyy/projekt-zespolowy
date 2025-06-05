@@ -16,7 +16,7 @@
 
                 @forelse($upcomingCompetitions as $competition)
                     <article class="bg-white border-l-4 border-blue-900 p-5 rounded-lg shadow mb-6">
-                        <h4 class="text-2xl font-semibold text-blue-900">{{ $competition->name }}</h4>
+                        <h4 class="text-2xl font-semibold text-blue-900 break-words">{{ $competition->name }}</h4>
 
                         <p class="text-gray-600 text-sm mb-2">
                             📅 {{ \Carbon\Carbon::parse($competition->start_date)->format('d.m.Y') }}
