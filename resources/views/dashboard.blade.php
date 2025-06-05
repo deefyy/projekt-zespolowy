@@ -22,8 +22,8 @@
                             <div class="flex flex-col md:flex-row">
 
                                 {{-- TREŚĆ --------------------------------------------------}}
-                                <div class="p-6 flex-1">
-                                    <h4 class="text-2xl font-semibold text-blue-900 mb-1">
+                                <div class="p-6 flex-1 min-w-0">
+                                    <h4 class="text-2xl font-semibold text-blue-900 mb-1 break-words">
                                         {{ $competition->name }}
                                     </h4>
 
@@ -34,7 +34,7 @@
                                         @endif
                                     </p>
 
-                                    <p class="text-gray-800 mb-4 line-clamp-3">
+                                    <p class="text-gray-800 mb-4 line-clamp-3 break-words">
                                         {{ \Illuminate\Support\Str::limit(strip_tags($competition->description), 120, '…') }}
                                     </p>
 

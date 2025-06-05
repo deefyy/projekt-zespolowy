@@ -31,7 +31,7 @@
                                      class="w-full h-48 md:h-full object-cover">
                             </div>
 
-                            <div class="p-5 flex-1">
+                            <div class="p-5 flex-1 min-w-0">
                                 <h3 class="text-xl font-semibold text-[#002d62] mb-1 break-words">
                                     {{ $competition->name }}
                                 </h3>
