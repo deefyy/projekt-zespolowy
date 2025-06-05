@@ -8,6 +8,16 @@
       {{-- dane konkursu --}}
       <h1 class="text-2xl font-bold mb-2">{{ $competition->name }}</h1>
       <p class="text-gray-700 mb-2">{{ $competition->description }}</p>
+
+      {{-- ⬇︎  NOWOŚĆ – plakat, jeśli istnieje --}}
+      @if($competition->poster_path)
+        <div class="mb-4">
+          <img src="{{ Storage::url($competition->poster_path) }}"
+               alt="Plakat konkursu {{ $competition->name }}"
+               class="w-full max-h-96 object-contain rounded-lg shadow-md">
+        </div>
+      @endif
+
       <p class="text-sm text-gray-500 mb-2">
         Liczba etapów: {{ $competition->stages_count }}
       </p>

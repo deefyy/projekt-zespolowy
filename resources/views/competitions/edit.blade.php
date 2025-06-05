@@ -1,6 +1,8 @@
 <x-app-layout>
   <x-slot name="header">
-    <h2 class="font-semibold text-xl text-gray-800 leading-tight">Edytuj konkurs</h2>
+    <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+      Edytuj konkurs
+    </h2>
   </x-slot>
 
   <div class="py-6">
@@ -17,7 +19,10 @@
         </div>
       @endif
 
-      <form action="{{ route('competitions.update', $competition) }}" method="POST">
+      {{-- ⬇︎  DODAJ enctype="multipart/form-data" --}}
+      <form action="{{ route('competitions.update', $competition) }}"
+            method="POST"
+            enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -42,11 +47,33 @@
                     required>{{ old('description', $competition->description) }}</textarea>
         </div>
 
+        {{-- ⬇︎  AKTUALNY PLAKAT (jeśli istnieje) --}}
+        @if($competition->poster_path)
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Aktualny plakat</label>
+            <img src="{{ Storage::url($competition->poster_path) }}"
+                 alt="Plakat konkursu {{ $competition->name }}"
+                 class="w-full max-h-60 object-contain rounded-lg shadow mt-2">
+          </div>
+        @endif
+
+        {{-- ⬇︎  NOWY PLAKAT --}}
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700">
+            Zmień plakat (opcjonalnie)
+          </label>
+          <input type="file"
+                 name="poster"
+                 accept="image/*"
+                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+          <p class="text-xs text-gray-500 mt-1">JPG/PNG/WEBP, maks. 2&nbsp;MB. Pozostaw puste, aby zachować obecny plik.</p>
+        </div>
+
         {{-- Ilość etapów --}}
         <div class="mb-4">
           <label for="stages_count" class="block text-sm font-medium text-gray-700">Ilość etapów</label>
           <input type="number"
-                 name="stages_count"             
+                 name="stages_count"
                  id="stages_count"
                  min="1"
                  value="{{ old('stages_count', $competition->stages_count) }}"
