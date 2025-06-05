@@ -45,10 +45,10 @@
                         </div>
                     @else
                         <div class="p-5">
-                            <h3 class="text-xl font-semibold text-[#002d62] mb-1">
+                            <h3 class="text-xl font-semibold text-[#002d62] mb-1 break-words">
                                 {{ $competition->name }}
                             </h3>
-                            <p class="text-gray-600 mb-2 line-clamp-2">
+                            <p class="text-gray-600 mb-2 line-clamp-2 break-words">
                                 {{ $competition->description }}
                             </p>
                             <p class="text-sm text-gray-500">
