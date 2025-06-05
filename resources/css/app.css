@@ -1,3 +1,89 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.high-contrast {
+    background-color: black !important;
+    color: yellow !important;
+}
+
+.high-contrast .min-h-screen {
+    background: black;
+}
+
+.high-contrast.bg-gradient-to-b {
+    background: black;
+}
+.high-contrast * {
+    background-color: black !important;
+    color: yellow !important;
+    border-color: yellow !important;
+}
+
+.high-contrast a {
+    color: yellow !important;
+    text-decoration: underline;
+}
+
+.high-contrast main div div div a {
+    border: 1px solid yellow;
+}
+
+.high-contrast th {
+    border: 1px solid yellow;
+}
+
+.high-contrast td div:not(:first-child){
+    background-color: yellow !important;
+    color: black !important;
+}
+
+.high-contrast article a {
+    color: yellow !important;
+    border: 1px solid yellow;
+}
+
+.high-contrast button {
+    color: yellow !important;
+    border: 1px solid yellow;
+}
+
+
+.high-contrast footer{
+    border: 1px solid yellow;
+}
+
+.high-contrast a.block {
+    border: 1px solid yellow;
+}
+.high-contrast input[type="submit"], 
+.high-contrast button[type="submit"]{
+    color: yellow !important;
+    border: 1px solid yellow;
+}
+
+.high-contrast [type="date"]::-webkit-calendar-picker-indicator{
+    filter: invert(100%) sepia(38%) saturate(6915%) hue-rotate(354deg) brightness(100%) contrast(110%);
+}
+
+.high-contrast .dropdown-menu {
+    background-color: black !important;
+    color: yellow !important;
+    border: 1px solid yellow;
+}
+
+.high-contrast .dropdown-menu a {
+    color: yellow !important;
+}
+
+.high-contrast .dropdown-menu a:hover {
+    background-color: yellow !important;
+    color: black !important;
+}
+.high-contrast table{
+    border: 1px solid yellow;
+}
+
+body {
+    transition: all 0.3s ease-in-out; /* Płynne przejście przy zmianie stylów */
+}
