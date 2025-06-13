@@ -3,6 +3,7 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Competition extends Model
 {
@@ -39,5 +40,8 @@ class Competition extends Model
         return $this->hasMany(Stage::class);
     }
     
-
+    public function coOrganizers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'competition_managements');
+    }
 }

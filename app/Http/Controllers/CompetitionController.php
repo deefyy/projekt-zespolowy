@@ -12,7 +12,8 @@ use App\Models\CompetitionRegistration;
 use App\Models\Forum;
 use App\Models\StageCompetition;
 use App\Notifications\CompetitionCreatedNotification;
-
+use App\Models\User;
+use App\Notifications\CoOrganizerInvitation;
 use App\Exports\CompetitionsExport;
 use App\Imports\CompetitionsImport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -458,6 +459,44 @@ class CompetitionController extends Controller
     return redirect()
         ->route('competitions.show', $competition)
         ->with('success', 'Punkty zostały zapisane.');
-}
+    }   
 
+    public function inviteCoorganizer(Request $request, Competition $competition)
+    {
+        // Only allow owner or admin
+        $userRole = auth()->user()?->role;
+        $user = auth()->user();
+        if (!($user->id === $competition->user_id || $userRole === 'admin')) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Validate email
+        $data = $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        // Find the user by email
+        $invitee = User::where('email', $data['email'])->first();
+        if (! $invitee) {
+            return back()->withErrors(['email' => 'No user found with that email.']);
+        }
+
+        if ($invitee->role !== 'organizator') {
+        return back()->withErrors(['email' => 'User must have the “organizator” role.']);
+    }
+
+        // Prevent duplicate co-organizer entry
+        // Option 1: check collection
+        if ($competition->coOrganizers()->where('user_id', $invitee->id)->exists()) {
+            return back()->with('status', 'User is already a co-organizer.');
+        }
+
+        // Option 2: attach without duplicates using syncWithoutDetaching:contentReference[oaicite:1]{index=1}
+        $competition->coOrganizers()->syncWithoutDetaching($invitee->id);
+
+        // Send notification with a link to the competition
+        $invitee->notify(new CoOrganizerInvitation($competition));
+
+        return back()->with('status', 'Co-organizer added and notified.');
+    }
 }
