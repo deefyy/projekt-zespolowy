@@ -44,7 +44,12 @@ class ForumController extends Controller
 
         // 1. Posty z MOICH konkursów (gdzie jestem właścicielem)
         $ownerQuery = Forum::with('competition')
-            ->whereHas('competition', fn($q) => $q->where('user_id', $userId));
+            ->whereHas('competition', function ($q) use ($userId) {
+                $q->where('user_id', $userId)                         // właściciel
+                ->orWhereHas('coOrganizers', function ($q2) use ($userId) {
+                    $q2->where('users.id', $userId);                // współorganizator
+                });
+            });
     
         if ($search) {
             $ownerQuery->where('topic', 'like', "%{$search}%");

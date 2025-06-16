@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->alias([
+        'subscribed' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+        'owner' => \App\Http\Middleware\EnsureCompetitionManager::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
