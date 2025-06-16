@@ -19,7 +19,7 @@ class ForumCommentController extends Controller
     public function store(Request $request, Forum $forum)
     {
         // Sprawdzenie uprawnień: czy zalogowany użytkownik jest autorem konkursu powiązanego z tym postem forum
-        if (Auth::id() !== $forum->competition->user_id) {
+        if (Auth::id() !== $forum->competition->user_id && Auth::user()->role !== 'admin') {
             abort(403, 'Brak uprawnień do dodawania komentarzy w tym poście.');
         }
 

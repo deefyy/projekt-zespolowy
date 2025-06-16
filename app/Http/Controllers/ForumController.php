@@ -17,10 +17,31 @@ class ForumController extends Controller
      */
     public function index(Request $request)
     {
+        $user = Auth::user();
         $userId = Auth::id();
         $search = $request->input('search');
         $sortDir = $request->input('sort') === 'oldest' ? 'asc' : 'desc';
     
+
+        if ($user->role === 'admin') {
+            $allForums = Forum::with('competition')
+                ->whereHas('competition');
+
+            if ($search) {
+                $allForums->where('topic', 'like', "%{$search}%");
+            }
+
+            $forums = $allForums
+                ->orderBy('added_date', $sortDir)
+                ->paginate(10)
+                ->withQueryString();
+
+            return view('forums.index', [
+                'ownerForums' => $forums,
+                'participantForums' => collect(),
+            ]);
+        }
+
         // 1. Posty z MOICH konkursów (gdzie jestem właścicielem)
         $ownerQuery = Forum::with('competition')
             ->whereHas('competition', fn($q) => $q->where('user_id', $userId));
