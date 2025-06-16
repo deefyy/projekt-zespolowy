@@ -90,8 +90,29 @@
           <a href="{{ route('competitions.points.edit', $competition) }}"
            class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
             Zarządzaj punktami
-        </a>
+          </a>
+
         </div>
+        @if($errors->any())
+            <div class="mt-4 p-4 bg-red-100 text-red-800 rounded">
+                <ul class="list-disc pl-5 space-y-1">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @if(session('status'))
+            <div class="mt-4 p-4 bg-green-100 text-green-800 rounded">
+                {{ session('status') }}
+            </div>
+        @endif
+        <form action="{{ route('competitions.inviteCoorganizer', $competition) }}" method="POST" class="mt-4">
+                @csrf
+                <input type="email" name="email" required placeholder="Co-organizer email" class="form-input" />
+                <button type="submit" class="btn btn-primary">Add Co-Organizer</button>
+        </form>
       @endif
     
 
@@ -199,7 +220,6 @@
                   </div>
               @endif
           @endauth
-
       {{-- powrót --}}
       <a href="{{ route('competitions.index') }}"
          class="text-blue-500 hover:underline mt-4 block">

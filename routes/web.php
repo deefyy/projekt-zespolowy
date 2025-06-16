@@ -46,6 +46,10 @@ Route::middleware(['auth'])->group(function () {
          ->name('forums.comments.store');
     Route::put('/forums/{forum}/comments/{comment}', [ForumCommentController::class, 'update'])
          ->name('forums.comments.update');
+
+    Route::post('/competitions/{competition}/invite-coorganizer', 
+        [CompetitionController::class, 'inviteCoorganizer'])
+        ->name('competitions.inviteCoorganizer');
 });
 
 Route::get('/competitions/{competition}/points/edit', [CompetitionController::class, 'editPoints'])->name('competitions.points.edit');
