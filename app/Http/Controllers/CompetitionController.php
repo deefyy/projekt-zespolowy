@@ -210,11 +210,21 @@ class CompetitionController extends Controller
     }
     public function showRegistrationForm(Competition $competition)
     {
-        if (now()->greaterThan($competition->registration_deadline)
-        && auth()->user()?->role === 'user') {
+        $user = auth()->user();
+        $role = $user?->role ?? 'guest';
 
-        return back()->with('error', 'Termin rejestracji minął!');
-        }   
+        $isAdmin  = $role === 'admin';
+        $isOwner  = $user && $competition->user_id === $user->id;
+        $isCoOrg  = $user && $competition->coOrganizers()
+                                        ->where('user_id', $user->id)
+                                        ->exists();
+
+        $deadlinePassed = now()->greaterThan($competition->registration_deadline);
+
+
+        if ($deadlinePassed && ! ($isAdmin || $isOwner || $isCoOrg)) {
+            return back()->with('error', 'Termin rejestracji minął!');
+        }
 
         $classes = $this->schoolClasses();
         return view('competitions.register', compact('competition','classes'));
