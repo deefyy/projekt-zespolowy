@@ -26,11 +26,8 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/competitions', [CompetitionController::class, 'store'])->name('competitions.store');
             Route::get('/students/{student}/edit', [CompetitionController::class, 'editStudent'])->name('students.edit');
             Route::put('/students/{student}', [CompetitionController::class, 'updateStudent'])->name('students.update');
-            Route::delete('/students/{student}', [CompetitionController::class, 'deleteStudent'])->name('students.destroy');
+            Route::delete('/students/{student}', [CompetitionController::class, 'deleteStudent'])->name('students.destroy');       
 
-                       
-            Route::get('/forums', [ForumController::class, 'index'])->name('forums.index');
-            Route::get('/forums/{forum}', [ForumController::class, 'show'])->name('forums.show');
             Route::post('/forums/{forum}/comments', [ForumCommentController::class, 'store'])
                 ->name('forums.comments.store');
             Route::put('/forums/{forum}/comments/{comment}', [ForumCommentController::class, 'update'])
@@ -45,8 +42,7 @@ Route::middleware(['auth'])->group(function () {
             Route::put('competitions/{competition}', [CompetitionController::class, 'update'])->name('competitions.update');
             Route::delete('competitions/{competition}', [CompetitionController::class, 'destroy'])->name('competitions.destroy');
  
-            Route::get('/competitions/{competition}/register', [CompetitionController::class, 'showRegistrationForm'])->name('competitions.showRegisterForm');
-            Route::post('/competitions/{competition}/register-students', [CompetitionController::class, 'registerStudents'])->name('competitions.registerStudents');
+
 
 
             Route::post('/competitions/{competition}/invite-coorganizer', 
@@ -58,6 +54,8 @@ Route::middleware(['auth'])->group(function () {
             });
 
 
+        Route::get('/competitions/{competition}/register', [CompetitionController::class, 'showRegistrationForm'])->name('competitions.showRegisterForm');
+        Route::post('/competitions/{competition}/register-students', [CompetitionController::class, 'registerStudents'])->name('competitions.registerStudents');
 
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -65,7 +63,9 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/competitions/events-json', [DashboardController::class, 'eventsJson'])
         ->name('competitions.eventsJson');
-    
+
+        Route::get('/forums', [ForumController::class, 'index'])->name('forums.index');
+        Route::get('/forums/{forum}', [ForumController::class, 'show'])->name('forums.show');
      });
 });
 
