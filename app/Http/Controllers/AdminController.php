@@ -55,7 +55,7 @@ class AdminController extends Controller
             'role' => 'required|in:user,employee,admin',
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'last_name' => $request->last_name,
             'email' => $request->email,
@@ -63,6 +63,7 @@ class AdminController extends Controller
             'role' => $request->role,
         ]);
 
+        $user->sendEmailVerificationNotification();
         return redirect()->route('admin.dashboard')->with('success', 'Użytkownik został pomyślnie dodany!');
 
     }
