@@ -11,167 +11,28 @@ use Illuminate\Support\Collection as IlluminateCollection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
-use Maatwebsite\Excel\Concerns\WithColumnFormatting;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Exception;
 
-class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation, WithColumnFormatting
+class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
 {
     protected Competition $competition;
     protected array $columnMappings;
-    protected $stagesByNumber;
-    protected $registrationsOrdered;
+    protected IlluminateCollection $stages;
+
+    private const INITIAL_VERIFICATION_THRESHOLD = 3;
+    private const INITIAL_VERIFICATION_ROWS_TO_CHECK = 5;
 
     public function __construct(Competition $competition, array $columnMappingsFromController = [])
     {
         $this->competition = $competition;
         $this->columnMappings = $columnMappingsFromController;
-        if (method_exists($this->competition, 'stages')) {
-            $this->stagesByNumber = $this->competition->stages()->orderBy('stage')->get()->keyBy('stage');
-        } else {
-            $this->stagesByNumber = collect();
-        }
-        $this->loadRegistrations();
+        $this->stages = $competition->stages()->orderBy('stage')->get();
     }
 
-    protected function loadRegistrations()
-    {
-        if (method_exists($this->competition, 'registrations')) {
-            $this->registrationsOrdered = $this->competition->registrations()
-                                              ->with('student')
-                                              ->orderBy('id')
-                                              ->get();
-        } else {
-            $this->registrationsOrdered = collect();
-        }
-    }
-
-    public function columnFormats(): array
-    {
-        return $formats;
-    }
-
-    public function collection(IlluminateCollection $rows)
-    {
-        DB::beginTransaction();
-        try {
-            $initialRegistrationsCount = $this->registrationsOrdered ? $this->registrationsOrdered->count() : 0;
-
-            foreach ($rows as $rowIndex => $row) {
-                $rowDataFromExcel = $row->toArray();
-                $lpValue = $this->getRowValue($rowDataFromExcel, 'Lp');
-                $lp = is_numeric($lpValue) ? (int)$lpValue : 0;
-
-                if ($lp <= 0) {
-                    continue;
-                }
-
-                $student = null;
-                $isNewStudentFlow = false;
-
-                $classValueFromExcel = $this->getRowValue($rowDataFromExcel, 'Klasa');
-                $classStringValue = ($classValueFromExcel === null) ? null : (string) $classValueFromExcel;
-
-                if ($this->registrationsOrdered && $lp <= $initialRegistrationsCount) {
-                    $registration = $this->registrationsOrdered->get($lp - 1);
-                    if (!$registration || !$registration->student) {
-                        continue;
-                    }
-                    $student = $registration->student;
-                    $studentDataToUpdate = [
-                        'name'           => $this->getRowValue($rowDataFromExcel, 'Imię ucznia', $student->name),
-                        'last_name'      => $this->getRowValue($rowDataFromExcel, 'Nazwisko ucznia', $student->last_name),
-                        'class'          => $classStringValue ?? (string) $student->class,
-                        'school'         => $this->getRowValue($rowDataFromExcel, 'Nazwa szkoły', $student->school),
-                        'school_address' => $this->getRowValue($rowDataFromExcel, 'Adres szkoły', $student->school_address),
-                        'teacher'        => $this->getRowValue($rowDataFromExcel, 'Nauczyciel', $student->teacher),
-                        'guardian'       => $this->getRowValue($rowDataFromExcel, 'Rodzic', $student->guardian),
-                        'contact'        => $this->getRowValue($rowDataFromExcel, 'Kontakt', $student->contact),
-                        'statement'      => $this->parseBoolean($this->getRowValue($rowDataFromExcel, 'Oświadczenie', $student->statement)),
-                    ];
-                    $student->update($studentDataToUpdate);
-                } elseif ($lp > $initialRegistrationsCount) {
-                    $isNewStudentFlow = true;
-                    $newStudentName = $this->getRowValue($rowDataFromExcel, 'Imię ucznia');
-                    $newStudentLastName = $this->getRowValue($rowDataFromExcel, 'Nazwisko ucznia');
-
-                    if (empty($newStudentName) || empty($newStudentLastName)) {
-                        continue;
-                    }
-
-                    $studentDataToCreate = [
-                        'name'           => $newStudentName,
-                        'last_name'      => $newStudentLastName,
-                        'class'          => $classStringValue,
-                        'school'         => $this->getRowValue($rowDataFromExcel, 'Nazwa szkoły'),
-                        'school_address' => $this->getRowValue($rowDataFromExcel, 'Adres szkoły'),
-                        'teacher'        => $this->getRowValue($rowDataFromExcel, 'Nauczyciel'),
-                        'guardian'       => $this->getRowValue($rowDataFromExcel, 'Rodzic'),
-                        'contact'        => $this->getRowValue($rowDataFromExcel, 'Kontakt'),
-                        'statement'      => $this->parseBoolean($this->getRowValue($rowDataFromExcel, 'Oświadczenie')),
-                    ];
-                    $student = Student::create($studentDataToCreate);
-
-                    $userIdForRegistration = Auth::id() ?? $this->competition->user_id;
-                    if (!$userIdForRegistration) {
-                        $adminUser = User::where('role', 'admin')->orderBy('id', 'asc')->first();
-                        $userIdForRegistration = $adminUser ? $adminUser->id : null;
-                    }
-
-                    if ($student && $userIdForRegistration) {
-                        CompetitionRegistration::create([
-                            'competition_id' => $this->competition->id,
-                            'user_id'        => $userIdForRegistration,
-                            'student_id'     => $student->id,
-                        ]);
-                    } elseif (!$student || !$userIdForRegistration) {
-                        $student = null;
-                    }
-                } else {
-                    continue;
-                }
-
-                if ($student && $this->stagesByNumber && $this->stagesByNumber->isNotEmpty()) {
-                    foreach ($this->stagesByNumber as $stageNumber => $stageModel) {
-                        $stageSystemHeader = "{$stageNumber} ETAP";
-                        $resultExcelValue = $this->getRowValue($rowDataFromExcel, $stageSystemHeader);
-                        
-                        $finalResultForDb = null;
-                        if ($resultExcelValue !== null) {
-                           $finalResultForDb = ($resultExcelValue === '') ? null : (string) $resultExcelValue;
-                        }
-                        
-                        if ($resultExcelValue !== null) {
-                            $updateOrCreateCriteria = [
-                                'competition_id' => $this->competition->id,
-                                'stage_id'       => $stageModel->id,
-                                'student_id'     => $student->id,
-                            ];
-                            $updateOrCreateValues = ['result' => $finalResultForDb];
-                            StageCompetition::updateOrCreate($updateOrCreateCriteria, $updateOrCreateValues);
-                        }
-                    }
-                }
-            }
-            DB::commit();
-        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
-            DB::rollBack();
-            Log::error("CompetitionsImport: ValidationException. DB::rollBack() executed. Failures: " . json_encode($e->failures()) . " Message: " . $e->getMessage());
-            throw $e;
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            $errorContext = isset($rowDataFromExcel) ? json_encode($rowDataFromExcel) : 'Error occurred';
-            Log::error("CompetitionsImport: Critical Throwable. DB::rollBack() executed. Msg: " . $e->getMessage(), [
-                'trace' => implode("\n", array_slice(explode("\n", $e->getTraceAsString()), 0, 10)),
-                'row_data' => $errorContext
-            ]);
-            throw new \Exception("Import failed: " . $e->getMessage(), 0, $e);
-        }
-    }
-
-    private function getRowValue(array $rowDataFromExcel, string $systemStandardHeaderName, $default = null)
+    private function getRowValue(array $excelRowData, string $systemStandardHeaderName, $default = null)
     {
         $headerActuallyInUserExcelFile = $systemStandardHeaderName;
         if (!empty($this->columnMappings)) {
@@ -180,50 +41,161 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
                 $headerActuallyInUserExcelFile = $foundUserHeader;
             }
         }
-
-        $maatwebsiteKey = null;
-        if (preg_match('/^(\d+)\sETAP$/i', $headerActuallyInUserExcelFile, $matches)) {
-            $maatwebsiteKey = strtolower($matches[1] . '_etap');
-        } elseif (strcasecmp($headerActuallyInUserExcelFile, 'Lp') == 0 || strcasecmp($headerActuallyInUserExcelFile, 'L.p.') == 0) {
-            $maatwebsiteKey = 'lp';
-        } else {
-            $asciiHeaderForSnake = Str::ascii($headerActuallyInUserExcelFile);
-            $maatwebsiteKey = Str::snake($asciiHeaderForSnake);
+        $maatwebsiteKey = Str::snake(Str::ascii(strtolower(trim($headerActuallyInUserExcelFile))));
+        
+        if (preg_match('/^(\d+)\s*ETAP$/i', trim($headerActuallyInUserExcelFile), $matches)) {
+             $maatwebsiteKey = strtolower($matches[1] . '_etap');
+        } elseif (strcasecmp(trim($headerActuallyInUserExcelFile), 'ID Systemowe') == 0) {
+            $maatwebsiteKey = 'id_systemowe';
         }
-
-        if (array_key_exists($maatwebsiteKey, $rowDataFromExcel)) {
-            return $rowDataFromExcel[$maatwebsiteKey];
+        
+        if (array_key_exists($maatwebsiteKey, $excelRowData)) {
+            return $excelRowData[$maatwebsiteKey];
         }
         return $default;
     }
 
+    public function prepareForValidation(array $data, int $index): array
+    {
+        $headersToConvert = ['Klasa'];
+        foreach($this->stages as $stage) {
+            $headersToConvert[] = "{$stage->stage} ETAP";
+        }
+
+        foreach ($headersToConvert as $headerName) {
+            $headerInFile = $headerName;
+            if (!empty($this->columnMappings)) {
+                $userProvidedHeader = array_search($headerName, $this->columnMappings, true);
+                if ($userProvidedHeader !== false) {
+                    $headerInFile = $userProvidedHeader;
+                }
+            }
+            $normalizedKey = Str::snake(Str::ascii(strtolower(trim($headerInFile))));
+            if (preg_match('/^(\d+)\s*ETAP$/i', trim($headerInFile), $matches)) {
+                $normalizedKey = strtolower($matches[1] . '_etap');
+            }
+            if (isset($data[$normalizedKey]) && $data[$normalizedKey] !== null) {
+                $data[$normalizedKey] = (string) $data[$normalizedKey];
+            }
+        }
+        return $data;
+    }
+
+    public function collection(IlluminateCollection $rows)
+    {
+        if ($rows->isEmpty()) return;
+
+        $verifiedMatchCount = 0;
+        $rowsToCheck = min($rows->count(), self::INITIAL_VERIFICATION_ROWS_TO_CHECK);
+        for ($i = 0; $i < $rowsToCheck; $i++) {
+            $excelRowData = $rows->get($i)->toArray();
+            $systemId = $this->getRowValue($excelRowData, 'ID Systemowe');
+            if (is_numeric($systemId)) {
+                $registration = CompetitionRegistration::with('student')->find((int)$systemId);
+                if ($registration && $registration->student) {
+                    if (
+                        strtolower(trim($registration->student->name ?? '')) === strtolower(trim($this->getRowValue($excelRowData, 'Imię ucznia') ?? '')) &&
+                        strtolower(trim($registration->student->last_name ?? '')) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwisko ucznia') ?? '')) &&
+                        (string)($registration->student->class ?? '') === (string)($this->getRowValue($excelRowData, 'Klasa') ?? '') &&
+                        strtolower(trim($registration->student->school ?? '')) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwa szkoły') ?? ''))
+                    ) {
+                        $verifiedMatchCount++;
+                    }
+                }
+            }
+        }
+        
+        $effectiveThreshold = min(self::INITIAL_VERIFICATION_THRESHOLD, $rows->count());
+        if ($verifiedMatchCount < $effectiveThreshold) {
+            throw new Exception("Import przerwany: Weryfikacja wstępna pliku nie powiodła się. Niewystarczająca liczba pasujących wierszy (oczekiwano {$effectiveThreshold}, znaleziono {$verifiedMatchCount}).");
+        }
+
+        foreach ($rows as $rowIndex => $row) {
+            $excelRowData = $row->toArray();
+            $systemId = $this->getRowValue($excelRowData, 'ID Systemowe');
+            $registrationToUpdate = null;
+
+            if (is_numeric($systemId)) {
+                $registrationToUpdate = CompetitionRegistration::with('student')->find((int)$systemId);
+            }
+
+            if ($registrationToUpdate && $registrationToUpdate->student) {
+                $studentDataToUpdate = [
+                    'name'           => $this->getRowValue($excelRowData, 'Imię ucznia', $registrationToUpdate->student->name),
+                    'last_name'      => $this->getRowValue($excelRowData, 'Nazwisko ucznia', $registrationToUpdate->student->last_name),
+                    'class'          => (string)$this->getRowValue($excelRowData, 'Klasa', $registrationToUpdate->student->class),
+                    'school'         => $this->getRowValue($excelRowData, 'Nazwa szkoły', $registrationToUpdate->student->school),
+                    'school_address' => $this->getRowValue($excelRowData, 'Adres szkoły', $registrationToUpdate->student->school_address),
+                    'teacher'        => $this->getRowValue($excelRowData, 'Nauczyciel', $registrationToUpdate->student->teacher),
+                    'guardian'       => $this->getRowValue($excelRowData, 'Rodzic', $registrationToUpdate->student->guardian),
+                    'contact'        => $this->getRowValue($excelRowData, 'Kontakt', $registrationToUpdate->student->contact),
+                    'statement'      => $this->parseBoolean($this->getRowValue($excelRowData, 'Oświadczenie', $registrationToUpdate->student->statement)),
+                ];
+                $registrationToUpdate->student->update($studentDataToUpdate);
+                $student = $registrationToUpdate->student;
+            } else {
+                $studentName = $this->getRowValue($excelRowData, 'Imię ucznia');
+                $studentLastName = $this->getRowValue($excelRowData, 'Nazwisko ucznia');
+                if (empty($studentName) || empty($studentLastName)) continue;
+
+                $student = Student::create([
+                    'name'           => $studentName,
+                    'last_name'      => $studentLastName,
+                    'class'          => (string)$this->getRowValue($excelRowData, 'Klasa'),
+                    'school'         => $this->getRowValue($excelRowData, 'Nazwa szkoły'),
+                    'school_address' => $this->getRowValue($excelRowData, 'Adres szkoły'),
+                    'teacher'        => $this->getRowValue($excelRowData, 'Nauczyciel'),
+                    'guardian'       => $this->getRowValue($excelRowData, 'Rodzic'),
+                    'contact'        => $this->getRowValue($excelRowData, 'Kontakt'),
+                    'statement'      => $this->parseBoolean($this->getRowValue($excelRowData, 'Oświadczenie')),
+                ]);
+                $userId = Auth::id() ?? $this->competition->user_id ?? User::where('role', 'admin')->orderBy('id')->value('id');
+                if ($userId) {
+                    CompetitionRegistration::create([
+                        'competition_id' => $this->competition->id,
+                        'user_id'        => $userId,
+                        'student_id'     => $student->id,
+                    ]);
+                } else {
+                    $student = null;
+                }
+            }
+
+            if ($student && $this->stages->isNotEmpty()) {
+                foreach ($this->stages as $stage) {
+                    $stageSystemHeader = "{$stage->stage} ETAP";
+                    $resultValue = $this->getRowValue($excelRowData, $stageSystemHeader);
+                    if ($resultValue !== null) {
+                        $finalResult = ($resultValue === '') ? null : (string)$resultValue;
+                        StageCompetition::updateOrCreate(
+                            ['competition_id' => $this->competition->id, 'stage_id' => $stage->id, 'student_id' => $student->id],
+                            ['result' => $finalResult]
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     private function parseBoolean($value): bool
     {
-        $result = false;
-        if (is_bool($value)) {
-            $result = $value;
-        } elseif ($value === null || $value === '') {
-            $result = false;
-        } elseif (is_string($value)) {
+        if (is_bool($value)) return $value;
+        if ($value === null || $value === '') return false;
+        if (is_string($value)) {
             $val = strtolower(trim($value));
-            if (in_array($val, ['true', '1', 'yes', 'prawda', 'tak', 'on', 't'])) {
-                $result = true;
-            } else {
-                $result = false;
-            }
-        } elseif (is_numeric($value)) {
-            $result = ((int)$value === 1);
+            if (in_array($val, ['true', '1', 'yes', 'prawda', 'tak', 'on', 't'])) return true;
         }
-        return $result;
+        if (is_numeric($value)) return ((int)$value === 1);
+        return false;
     }
 
     public function rules(): array
     {
         $rules = [
-            'lp'                 => ['required', 'integer', 'min:1'],
+            'id_systemowe'       => ['nullable', 'integer', 'min:1'],
             'imie_ucznia'        => ['nullable', 'string', 'max:255'],
             'nazwisko_ucznia'    => ['nullable', 'string', 'max:255'],
-            'klasa'              => ['nullable', 'max:255'],
+            'klasa'              => ['nullable', 'string', 'max:255'],
             'nazwa_szkoly'       => ['nullable', 'string', 'max:255'],
             'adres_szkoly'       => ['nullable', 'string', 'max:1000'],
             'oswiadczenie'       => ['nullable'],
@@ -231,23 +203,12 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
             'rodzic'             => ['nullable', 'string', 'max:255'],
             'kontakt'            => ['nullable', 'string', 'max:255'],
         ];
-
-        if ($this->stagesByNumber) {
-            foreach ($this->stagesByNumber as $stageNumber => $stageModel) {
-                $stageMaatwebsiteKey = strtolower($stageNumber . '_etap');
-                $rules[$stageMaatwebsiteKey] = ['nullable'];
+        if ($this->stages) {
+            foreach ($this->stages as $stage) {
+                $stageMaatwebsiteKey = strtolower($stage->stage . '_etap');
+                $rules[$stageMaatwebsiteKey] = ['nullable', 'string'];
             }
         }
         return $rules;
-    }
-
-    public function customValidationMessages()
-    {
-        $messages = [];
-        $messages['lp.required'] = 'Kolumna "Lp" jest wymagana.';
-        $messages['lp.integer'] = 'Wartość w kolumnie "Lp" musi być liczbą całkowitą.';
-        $messages['lp.min'] = 'Wartość w kolumnie "Lp" musi być co najmniej 1.';
-
-        return $messages;
     }
 }
