@@ -9,11 +9,6 @@ use App\Http\Controllers\ForumController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('dashboard');
@@ -25,6 +20,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 Route::middleware(['auth'])->group(function () {
+    Route::middleware(['subscribed'])->group(function () {
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
     Route::get('/competitions/create', [CompetitionController::class, 'create'])->name('competitions.create');
     Route::get('competitions/{competition}/edit', [CompetitionController::class, 'edit'])->name('competitions.edit');
     Route::get('competitions/{competition}/export-registrations', [CompetitionController::class, 'exportRegistrations'])->name('competitions.exportRegistrations');
@@ -50,10 +51,16 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/competitions/{competition}/invite-coorganizer', 
         [CompetitionController::class, 'inviteCoorganizer'])
         ->name('competitions.inviteCoorganizer');
+
+    Route::get('/competitions/{competition}/points/edit', [CompetitionController::class, 'editPoints'])->name('competitions.points.edit');
+    Route::post('/competitions/{competition}/points', [CompetitionController::class, 'updatePoints'])->name('competitions.points.update');
+
+    Route::get('/competitions/events-json', [DashboardController::class, 'eventsJson'])
+     ->name('competitions.eventsJson');
+     });
 });
 
-Route::get('/competitions/{competition}/points/edit', [CompetitionController::class, 'editPoints'])->name('competitions.points.edit');
-Route::post('/competitions/{competition}/points', [CompetitionController::class, 'updatePoints'])->name('competitions.points.update');
+
 
 Route::get('/', [DashboardController::class, 'index'])->name('home');
 Route::get('/competitions', [CompetitionController::class, 'index'])->name('competitions.index');
@@ -61,6 +68,5 @@ Route::get('/competitions/{competition}', [CompetitionController::class, 'show']
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
-Route::get('/competitions/events-json', [DashboardController::class, 'eventsJson'])
-     ->name('competitions.eventsJson');
+
 require __DIR__.'/auth.php';
