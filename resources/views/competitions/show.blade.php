@@ -62,8 +62,13 @@
         @php
             $user     = auth()->user();
             $isAdmin  = $user?->role === 'admin';
-            $isOwner  = $competition->user_id === $user?->id;
-            $isCoOrganizer = $competition->coOrganizers()->where('user_id', $user->id)->exists();
+            $isOwner  = $user?->id && $competition->user_id === $user->id;
+            $isCoOrganizer = false;
+                if ($user?->id) {
+                    $isCoOrganizer = $competition->coOrganizers()
+                        ->where('user_id', $user->id)
+                        ->exists();
+                }
         @endphp
 
         @if($isAdmin || $isOwner ||  $isCoOrganizer)
