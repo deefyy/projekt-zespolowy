@@ -36,12 +36,6 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/students/{student}', [CompetitionController::class, 'updateStudent'])->name('students.update');
             Route::delete('/students/{student}', [CompetitionController::class, 'deleteStudent'])->name('students.destroy');
 
-
-            Route::post('/forums/{forum}/comments', [ForumCommentController::class, 'store'])
-                ->name('forums.comments.store');
-            Route::put('/forums/{forum}/comments/{comment}', [ForumCommentController::class, 'update'])
-                ->name('forums.comments.update');
-
             Route::post('/competitions/{competition}/invite-coorganizer', 
                 [CompetitionController::class, 'inviteCoorganizer'])
                 ->name('competitions.inviteCoorganizer');
@@ -51,10 +45,15 @@ Route::middleware(['auth'])->group(function () {
             });
 
         Route::get('/competitions/create', [CompetitionController::class, 'create'])->name('competitions.create');
-           Route::post('/competitions', [CompetitionController::class, 'store'])->name('competitions.store');
+        Route::post('/competitions', [CompetitionController::class, 'store'])->name('competitions.store');
            
         Route::get('/forums', [ForumController::class, 'index'])->name('forums.index');
         Route::get('/forums/{forum}', [ForumController::class, 'show'])->name('forums.show');
+        Route::post('/forums/{forum}/comments', [ForumCommentController::class, 'store'])
+            ->name('forums.comments.store');
+        Route::put('/forums/{forum}/comments/{comment}', [ForumCommentController::class, 'update'])
+            ->name('forums.comments.update');
+
 
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

@@ -9,6 +9,7 @@ use App\Notifications\ForumCommentNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
+use App\Models\User;  
 
 class ForumCommentController extends Controller
 {
@@ -18,10 +19,18 @@ class ForumCommentController extends Controller
      */
     public function store(Request $request, Forum $forum)
     {
-        // Sprawdzenie uprawnień: czy zalogowany użytkownik jest autorem konkursu powiązanego z tym postem forum
-        if (Auth::id() !== $forum->competition->user_id) {
-            abort(403, 'Brak uprawnień do dodawania komentarzy w tym poście.');
-        }
+        $user = Auth::user();
+
+        // Uprawnienia
+        $isAdmin        = $user->role === 'admin';
+        $isOwner        = $user->id === $forum->competition->user_id;
+        $isCoOrganizer  = $forum->competition
+                            ->coOrganizers()
+                            ->where('user_id', $user->id)
+                            ->exists();
+
+        abort_unless($isAdmin || $isOwner || $isCoOrganizer, 403,
+            'Brak uprawnień do dodawania komentarzy w tym poście.');
 
         // Walidacja danych formularza
         $validatedData = $request->validate([
@@ -66,14 +75,23 @@ class ForumCommentController extends Controller
      */
     public function update(Request $request, Forum $forum, ForumComment $comment)
     {
-        // Sprawdzenie spójności: czy komentarz należy do tego posta (ochrona przed manipulacją URL)
-        if ($comment->forum_id !== $forum->id) {
-            abort(404);
-        }
-        // Sprawdzenie uprawnień: tylko autor komentarza (konkursu) może edytować
-        if (Auth::id() !== $comment->user_id) {
-            abort(403, 'Brak uprawnień do edycji tego komentarza.');
-        }
+        // Czy komentarz należy do danego posta?
+        abort_if($comment->forum_id !== $forum->id, 404);
+
+        $user = Auth::user();
+        $isAdmin        = $user->role === 'admin';
+        $isOwner        = $user->id === $forum->competition->user_id;
+        $isCoOrganizer  = $forum->competition
+                            ->coOrganizers()
+                            ->where('user_id', $user->id)
+                            ->exists();
+
+        // Uprawniony jest: autor komentarza LUB admin LUB owner LUB co-organizer
+        abort_unless(
+            $user->id === $comment->user_id || $isAdmin || $isOwner || $isCoOrganizer,
+            403,
+            'Brak uprawnień do edycji tego komentarza.'
+        );
 
         // Walidacja nowej treści
         $validatedData = $request->validate([

@@ -20,10 +20,36 @@ class ForumController extends Controller
         $userId = Auth::id();
         $search = $request->input('search');
         $sortDir = $request->input('sort') === 'oldest' ? 'asc' : 'desc';
-    
+
+        $user = Auth::user();
+        if ($user->role === 'admin') {
+            $allForums = Forum::with('competition')
+                ->whereHas('competition');
+
+            if ($search) {
+                $allForums->where('topic', 'like', "%{$search}%");
+            }
+
+            $forums = $allForums
+                ->orderBy('added_date', $sortDir)
+                ->paginate(10)
+                ->withQueryString();
+
+            return view('forums.index', [
+                'ownerForums' => $forums,
+                'participantForums' => collect(),
+            ]);
+        }
+
+
         // 1. Posty z MOICH konkursów (gdzie jestem właścicielem)
         $ownerQuery = Forum::with('competition')
-            ->whereHas('competition', fn($q) => $q->where('user_id', $userId));
+            ->whereHas('competition', function ($q) use ($userId) {
+                $q->where('user_id', $userId)                         // właściciel
+                ->orWhereHas('coOrganizers', function ($q2) use ($userId) {
+                    $q2->where('users.id', $userId);                // współorganizator
+                });
+            });
     
         if ($search) {
             $ownerQuery->where('topic', 'like', "%{$search}%");
