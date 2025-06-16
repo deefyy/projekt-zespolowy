@@ -20,7 +20,12 @@
                 <div class="mb-4 p-4 bg-white rounded-md shadow">
                     <p class="text-gray-800 break-words">{{ $comment->content }}</p>
                     <p class="text-sm text-gray-500">Dodano: {{ $comment->created_at->format('Y-m-d H:i') }}</p>
-                    @if(Auth::id() === $comment->user_id)
+                    @php
+                        $user   = Auth::user();
+                        $isOwn  = $user?->id === $comment->user_id;
+                        $isAdmin = $user?->role === 'admin';
+                    @endphp
+                    @if($isOwn || $isAdmin)
                         <!-- Przyciski edycji (dla autora komentarza) -->
                         <div class="mt-2">
                             <a href="{{ route('forums.show', [$forum, 'edit_comment' => $comment->id]) }}" 
@@ -43,7 +48,17 @@
             @endforeach
 
             <!-- Formularz dodawania nowego komentarza (tylko dla autora konkursu) -->
-            @if(Auth::id() === $forum->competition->user_id)
+            @php
+                $userId        = Auth::id();
+                $user          = Auth::user();
+                $isAdmin       = $user?->role === 'admin';
+                $isOwner       = $userId === $forum->competition->user_id;
+                $isCoOrganizer = $forum->competition
+                    ->coOrganizers() 
+                    ->where('user_id', $userId)
+                    ->exists();
+            @endphp
+            @if($isOwner || $isCoOrganizer || $isAdmin)
                 <div class="mt-6">
                     <h3 class="text-lg font-medium mb-2">Dodaj nowy komentarz</h3>
                     <form method="POST" action="{{ route('forums.comments.store', $forum) }}">
