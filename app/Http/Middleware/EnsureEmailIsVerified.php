@@ -23,6 +23,10 @@ class EnsureEmailIsVerified
 
         $user = Auth::user();
 
+        if ($user->role === 'admin') {
+            return $next($request);
+        }
+
         if (is_null($user->email_verified_at)) {
 
             return redirect()->route('verification.notice')
