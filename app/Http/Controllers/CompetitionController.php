@@ -275,7 +275,7 @@ class CompetitionController extends Controller
             ->where('user_id', auth()->id())
             ->exists();
         $isOrganizator = auth()->user()->role === 'organizator';
-        if ((!$isAdmin || !$isOrganizator) && !$isOwner ) {
+        if (!($isAdmin || $isOrganizator || $isOwner)) {
             abort(403, 'Brak dostępu');
         }
 
@@ -291,7 +291,7 @@ class CompetitionController extends Controller
             ->where('user_id', auth()->id())
             ->exists();
         $isOrganizator = auth()->user()->role === 'organizator';
-        if ((!$isAdmin || !$isOrganizator) && !$isOwner ) {
+        if (!($isAdmin || $isOrganizator || $isOwner)) {
             abort(403, 'Brak dostępu');
         }
 
@@ -329,7 +329,7 @@ class CompetitionController extends Controller
             ->where('user_id', auth()->id())
             ->exists();
         $isOrganizator = auth()->user()->role === 'organizator';
-        if ((!$isAdmin || !$isOrganizator) && !$isOwner ) {
+        if (!($isAdmin || $isOrganizator || $isOwner)) {
             abort(403, 'Brak dostępu');
         }
 
