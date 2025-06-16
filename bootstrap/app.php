@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
         'subscribed' => \App\Http\Middleware\EnsureEmailIsVerified::class,
         'owner' => \App\Http\Middleware\EnsureCompetitionManager::class,
+        'organizer' => \App\Http\Middleware\EnsureUserIsOrganizer::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -21,6 +21,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::middleware(['subscribed'])->group(function () {
+        Route::middleware(['organizer'])->group(function () {
+            Route::get('/competitions/create', [CompetitionController::class, 'create'])->name('competitions.create');
+            Route::post('/competitions', [CompetitionController::class, 'store'])->name('competitions.store');
+            Route::get('/students/{student}/edit', [CompetitionController::class, 'editStudent'])->name('students.edit');
+            Route::put('/students/{student}', [CompetitionController::class, 'updateStudent'])->name('students.update');
+            Route::delete('/students/{student}', [CompetitionController::class, 'deleteStudent'])->name('students.destroy');
+        });
         Route::middleware(['owner'])->group(function () {
 
             Route::get('competitions/{competition}/edit', [CompetitionController::class, 'edit'])->name('competitions.edit');
@@ -32,9 +39,7 @@ Route::middleware(['auth'])->group(function () {
  
             Route::get('/competitions/{competition}/register', [CompetitionController::class, 'showRegistrationForm'])->name('competitions.showRegisterForm');
             Route::post('/competitions/{competition}/register-students', [CompetitionController::class, 'registerStudents'])->name('competitions.registerStudents');
-            Route::get('/students/{student}/edit', [CompetitionController::class, 'editStudent'])->name('students.edit');
-            Route::put('/students/{student}', [CompetitionController::class, 'updateStudent'])->name('students.update');
-            Route::delete('/students/{student}', [CompetitionController::class, 'deleteStudent'])->name('students.destroy');
+
 
             Route::post('/competitions/{competition}/invite-coorganizer', 
                 [CompetitionController::class, 'inviteCoorganizer'])
@@ -44,8 +49,6 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/competitions/{competition}/points', [CompetitionController::class, 'updatePoints'])->name('competitions.points.update');
             });
 
-        Route::get('/competitions/create', [CompetitionController::class, 'create'])->name('competitions.create');
-        Route::post('/competitions', [CompetitionController::class, 'store'])->name('competitions.store');
            
         Route::get('/forums', [ForumController::class, 'index'])->name('forums.index');
         Route::get('/forums/{forum}', [ForumController::class, 'show'])->name('forums.show');
