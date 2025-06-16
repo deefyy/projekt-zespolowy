@@ -27,6 +27,14 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/students/{student}/edit', [CompetitionController::class, 'editStudent'])->name('students.edit');
             Route::put('/students/{student}', [CompetitionController::class, 'updateStudent'])->name('students.update');
             Route::delete('/students/{student}', [CompetitionController::class, 'deleteStudent'])->name('students.destroy');
+
+                       
+            Route::get('/forums', [ForumController::class, 'index'])->name('forums.index');
+            Route::get('/forums/{forum}', [ForumController::class, 'show'])->name('forums.show');
+            Route::post('/forums/{forum}/comments', [ForumCommentController::class, 'store'])
+                ->name('forums.comments.store');
+            Route::put('/forums/{forum}/comments/{comment}', [ForumCommentController::class, 'update'])
+                ->name('forums.comments.update');
         });
         Route::middleware(['owner'])->group(function () {
 
@@ -49,13 +57,6 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/competitions/{competition}/points', [CompetitionController::class, 'updatePoints'])->name('competitions.points.update');
             });
 
-           
-        Route::get('/forums', [ForumController::class, 'index'])->name('forums.index');
-        Route::get('/forums/{forum}', [ForumController::class, 'show'])->name('forums.show');
-        Route::post('/forums/{forum}/comments', [ForumCommentController::class, 'store'])
-            ->name('forums.comments.store');
-        Route::put('/forums/{forum}/comments/{comment}', [ForumCommentController::class, 'update'])
-            ->name('forums.comments.update');
 
 
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
