@@ -67,14 +67,16 @@
             $user     = auth()->user();
             $isAdmin  = $user?->role === 'admin';
             $isOwner  = $competition->user_id === $user?->id;
+            $isCoOrganizer = $competition->coOrganizers()->where('user_id', $user->id)->exists();
         @endphp
 
-        @if($isAdmin || $isOwner)
+        @if($isAdmin || $isOwner ||  $isCoOrganizer)
         <div class="mt-2 flex gap-2">
           <a href="{{ route('competitions.edit', $competition) }}"
              class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
             Edytuj konkurs
           </a>
+          @if(!$isCoOrganizer)
           <form action="{{ route('competitions.destroy', $competition) }}" method="POST"
                 onsubmit="return confirm('Czy na pewno chcesz usunąć ten konkurs?');">
             @csrf
@@ -83,6 +85,7 @@
               Usuń konkurs
             </button>
           </form>
+          @endif
           <a href="{{ route('competitions.exportRegistrations', $competition) }}"
              class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">
             Eksportuj do Excela
@@ -93,6 +96,7 @@
           </a>
 
         </div>
+        @if(!$isCoOrganizer)
         @if($errors->any())
             <div class="mt-4 p-4 bg-red-100 text-red-800 rounded">
                 <ul class="list-disc pl-5 space-y-1">
@@ -113,6 +117,7 @@
                 <input type="email" name="email" required placeholder="Co-organizer email" class="form-input" />
                 <button type="submit" class="btn btn-primary">Add Co-Organizer</button>
         </form>
+        @endif
       @endif
     
 
@@ -146,13 +151,14 @@
                                       $registrationStillOpen = now()->lessThanOrEqualTo($competition->registration_deadline);
                                       $user     = auth()->user();
                                       $isAdmin  = $user?->role === 'admin';
-                                      $isOwner  = $competition->user_id === $user?->id
+                                      $isOwner  = $competition->user_id === $user?->id;
+                                      $isCoOrganizer = $competition->coOrganizers()->where('user_id', $user->id)->exists();
                                   @endphp
 
                                   @foreach($userRegistrations as $reg)
                                       @if($reg->student)
                                           @php
-                                              $canEditOrDelete = $isAdmin || $isOwner ||  (
+                                              $canEditOrDelete = $isAdmin || $isOwner || $isCoOrganizer || (
                                                   $reg->user_id === auth()->id() && $registrationStillOpen
                                               );
                                           @endphp
