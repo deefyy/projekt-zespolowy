@@ -38,14 +38,14 @@ class CustomResetPassword extends ResetPassword
     {        
         return (new MailMessage)
             ->subject('Resetowanie hasła')
-            ->greeting('Czołem')
+            ->greeting('Witaj,')
             ->line('Otrzymaliśmy prośbę o zresetowanie hasła dla Twojego konta.')
             ->action('Zresetuj hasło', route('password.reset', [
                 'token' => $this->token,
                 'email' => $notifiable->getEmailForPasswordReset(),
             ]))
             ->line('Ten link wygaśnie za ' . config('auth.passwords.' . config('auth.defaults.passwords') . '.expire') . ' minut.')
-            ->line('Jeśli to nie Ty prosiłeś o reset hasła, nie musisz nic robić.')
+            ->line('Jeśli to nie Ty prosiłeś o reset hasła, możesz zignorować tę wiadomość.')
             ->salutation('Pozdrawiamy, Zespół Konkursu');
     }
 
