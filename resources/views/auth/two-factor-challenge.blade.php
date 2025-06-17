@@ -59,4 +59,34 @@
                     <div class="flex justify-between mt-6">
                         <button type="button"
                                 class="text-sm text-blue-600 hover:underline"
-                                x-on:click="showRecovery =
+                                x-on:click="showRecovery = false">
+                            Użyj kodu uwierzytelniającego
+                        </button>
+
+                        <button type="submit"
+                                class="bg-[#002d62] hover:bg-[#001b3e] text-white px-4 py-2 rounded-md shadow">
+                            Potwierdź
+                        </button>
+                    </div>
+                </form>
+
+                {{-- Wiadomość statusu --}}
+                @if (session('status'))
+                    <div class="mt-6 font-medium text-sm text-green-600">
+                        {{ session('status') }}
+                    </div>
+                @endif
+
+                {{-- Link do wyłączenia 2FA przez e-mail --}}
+                <form method="POST" action="{{ route('two-factor.send-disable-link') }}" class="mt-6">
+                    @csrf
+                    <input type="hidden" name="email" value="{{ session('email') }}">
+                    <button type="submit"
+                            class="w-full text-center py-2 px-4 rounded-md bg-gray-200 hover:bg-gray-300 text-sm text-gray-700">
+                        Wyślij e-mail z linkiem do wyłączenia 2FA
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</x-guest-layout>
