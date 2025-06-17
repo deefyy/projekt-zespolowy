@@ -29,8 +29,8 @@
           <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-2 text-left font-medium ">Temat posta</th>
-                <th class="px-4 py-2 text-left font-medium">Konkurs</th>
+                <th class="px-4 py-2 text-left font-medium ">Nazwa Konkursu</th>
+                <th class="px-4 py-2 text-left font-medium">Opis</th>
                 <th class="px-4 py-2 text-left font-medium">Dodano</th>
                 <th class="px-4 py-2"></th>
               </tr>
@@ -38,8 +38,8 @@
             <tbody class="divide-y divide-gray-100">
               @foreach($ownerForums as $forum)
                 <tr>
-                  <td class="px-4 py-2 max-w-[18rem] truncate" title="{{ $forum->topic }}">{{ $forum->topic }}</td>
                   <td class="px-4 py-2 max-w-[18rem] truncate" title="{{ $forum->competition->name }}">{{ $forum->competition->name }}</td>
+                  <td class="px-4 py-2 max-w-[18rem] truncate" title="{{ $forum->competition->description }}">{{ $forum->competition->description }}</td>
                   <td class="px-4 py-2">{{ $forum->added_date }}</td>
                   <td class="px-4 py-2 text-right">
                     <a href="{{ route('forums.show', $forum) }}"

@@ -7,8 +7,8 @@
             <h1 class="text-2xl font-bold mt-2">{{ $forum->title }}</h1>
             <!-- Możemy wyświetlić nazwę konkursu i datę dodania posta -->
             <p class="text-sm text-gray-600 break-words">Konkurs: {{ $forum->competition->name }} | Dodano: {{ $forum->created_at->format('Y-m-d H:i') }}</p>
-            @if($forum->content ?? false)
-                <div class="mt-4 prose">{{ $forum->content }}</div>
+            @if($forum->competition->description ?? false)
+                <div class="mt-4 prose break-words">{{ $forum->competition->description }}</div>
             @endif
         </div>
 
