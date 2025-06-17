@@ -31,10 +31,11 @@ class CoOrganizerInvitation extends Notification
         $url = route('competitions.show', $this->competition->id);
 
         return (new MailMessage)
-            ->greeting("Hello {$notifiable->name},")
-            ->line("You have been added as a co-organizer to the competition \"{$this->competition->name}\".")
-            ->action('View Competition', $url)
-            ->line('Thank you for being part of this competition!');
+            ->subject('Zostałeś dodany jako współorganizator.')
+            ->greeting("Witaj,")
+            ->line("Zostałeś dodany jako współorganizator do konkursu \"{$this->competition->name}\".")
+            ->action('Zobacz konkurs', $url)
+            ->salutation('Pozdrawiamy, Zespół Konkursu');
     }
 
     public function toArray(object $notifiable): array
