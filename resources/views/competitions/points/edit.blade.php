@@ -26,6 +26,18 @@
                         </ul>
                     </div>
                 @endif
+<form method="GET" action="{{ route('competitions.points.edit', $competition) }}" class="mb-6 flex flex-wrap items-center gap-4">
+    <input type="text" name="search" placeholder="Szukaj ucznia..." value="{{ request('search') }}"
+           class="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#002d62] focus:border-[#002d62]" />
+    <button type="submit"
+            class="bg-[#002d62] text-white px-4 py-2 rounded-lg hover:bg-[#001b3e]">
+        Szukaj
+    </button>
+    <a href="{{ route('competitions.points.edit', $competition) }}"
+       class="text-sm text-gray-500 hover:underline">
+        Resetuj
+    </a>
+</form>
 
                 <form method="POST" action="{{ route('competitions.points.update', $competition) }}">
                     @csrf
