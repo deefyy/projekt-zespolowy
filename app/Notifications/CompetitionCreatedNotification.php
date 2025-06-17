@@ -35,11 +35,11 @@ class CompetitionCreatedNotification extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Twój konkurs został utworzony!')
-            ->greeting('Czołem, ' . $notifiable->name .' '.$notifiable->last_name. '!')
-            ->line('Gratulacje! Konkurs "' . $this->competition->name . '" został pomyślnie utworzony.')
+            ->subject('Twój konkurs został utworzony.')
+            ->greeting('Witaj,')
+            ->line('Konkurs "' . $this->competition->name . '" został pomyślnie utworzony.')
             ->action('Zarządzaj konkursem', route('competitions.show', $this->competition->id))
-            ->line('Możesz teraz dodawać uczestników, edytować szczegóły i śledzić zgłoszenia.')
+            ->line('Możesz teraz dodawać uczestników i edytować szczegóły.')
             ->salutation('Pozdrawiamy, Zespół Konkursu');
     }
 

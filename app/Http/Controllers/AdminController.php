@@ -20,7 +20,6 @@ class AdminController extends Controller
     $sort = $request->input('sort', 'name'); // domyślnie sortujemy po imieniu
     $direction = $request->input('direction', 'asc');
 
-    // Lista dozwolonych kolumn do sortowania – dla bezpieczeństwa
     $allowedSorts = ['name', 'last_name', 'email', 'role'];
     if (!in_array($sort, $allowedSorts)) {
         $sort = 'name';
@@ -34,7 +33,7 @@ class AdminController extends Controller
         })
         ->orderBy($sort, $direction)
         ->paginate(10)
-        ->withQueryString(); // zachowaj sort/search w URL przy paginacji
+        ->withQueryString(); 
 
     return view('admin.dashboard', compact('users'));
 }

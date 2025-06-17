@@ -48,12 +48,12 @@
                         <label for="description" class="block text-sm font-medium text-gray-700">Opis</label>
                         <textarea name="description"
                                   id="description"
-                                  maxlength="255"
+                                  maxlength="1000"
                                   rows="4"
                                   oninput="updateDescCount()"
                                   class="mt-1 w-full border border-gray-300 rounded px-4 py-2 shadow-sm focus:ring-[#002d62] focus:border-[#002d62]"
                                   required>{{ old('description') }}</textarea>
-                        <p class="text-xs text-gray-500 mt-1"><span id="desc_count">0</span>/255 znaków</p>
+                        <p class="text-xs text-gray-500 mt-1"><span id="desc_count">0</span>/1000 znaków</p>
                     </div>
 
                     {{-- Plakat --}}

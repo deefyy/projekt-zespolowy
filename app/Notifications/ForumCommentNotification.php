@@ -44,7 +44,7 @@ class ForumCommentNotification extends Notification
                     ->line('Treść komentarza: "' . $this->comment->content . '"')
                     ->line('Autor komentarza: ' . $author->name .' '. $author->last_name)
                     ->action('Zobacz dyskusję', url(route('forums.show', $forum)))
-                    ->line('Dostałeś to powiadomienie, ponieważ dodałeś ucznia do tego konkursu.')
+                    ->line('Powiadomienie zostało wysłane, ponieważ dodano ucznia do tego konkursu.')
                     ->salutation('Pozdrawiamy, Zespół Konkursu');
     }
 

@@ -46,12 +46,13 @@ class DisableTwoFactorNotification extends Notification
         );
 
         return (new MailMessage)
-            ->subject('Wyłączenie Two-Factor Authentication')
-            ->greeting('Czołem')
-            ->line('Dostaliśmy prośbę o wyłączenie 2FA na twoim koncie.')
-            ->action('Wyłącz 2FA', $url)
+            ->subject('Wyłączenie zabezpieczenia dwuetapowego')
+            ->greeting('Witaj,')
+            ->line('Dostaliśmy prośbę o wyłączenie zabezpieczenia dwuetapowego na twoim koncie.')
+            ->action('Wyłącz zabezpieczenie dwuetapowe', $url)
             ->line('Ten link przestanie działać w ciągu 15 minut.')
-            ->line('Jeśli nie wysłałeś żadnej prośby, możesz zingnorować ten mail.');
+            ->line('Jeśli nie wysłałeś żadnej prośby, możesz zingnorować ten mail.')
+            ->salutation('Pozdrawiamy, Zespół Konkursu');
     }
 
     /**
