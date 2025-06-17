@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.classList.add('opacity-60', 'cursor-not-allowed');
         btn.insertAdjacentHTML('beforeend', spinner);
 
-        // zmień tekst (opcjonalnie)
         if (btn.dataset.loadingText) {
             btn.querySelector('span')?.replaceWith(btn.dataset.loadingText);
         }
