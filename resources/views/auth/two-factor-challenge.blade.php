@@ -80,7 +80,7 @@
                 {{-- Link do wyłączenia 2FA przez e-mail --}}
                 <form method="POST" action="{{ route('two-factor.send-disable-link') }}" class="mt-6">
                     @csrf
-                    <input type="hidden" name="email" value="{{ request()->challengedUser()->email }}">
+                    <input type="hidden" name="email" value="{{ session('email') }}">
                     <button type="submit"
                             class="w-full text-center py-2 px-4 rounded-md bg-gray-200 hover:bg-gray-300 text-sm text-gray-700">
                         {{ __('Send an email with a link to disable 2FA') }}

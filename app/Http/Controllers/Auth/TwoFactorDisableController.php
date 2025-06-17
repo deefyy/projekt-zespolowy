@@ -28,7 +28,7 @@ class TwoFactorDisableController extends Controller
         $user = User::where('email', $email)->first();
         if ($user) {
             $user->notify(new DisableTwoFactorNotification());
-            return back()->with('status', 'We’ve sent a link to disable 2FA to your email.');
+            return back()->with('status', 'Wysłaliśmy link do wyłączenia dwuetapowego uwierzytelniania na Twój adres e-mail.');
         }
 
         return back()->withErrors(['email' => 'User not found.']);
@@ -52,6 +52,6 @@ class TwoFactorDisableController extends Controller
             'two_factor_confirmed_at' => null,
         ])->save();
         
-        return redirect()->route('login')->with('status', 'Two-Factor Authentication has been disabled.');
+        return redirect()->route('login')->with('status', 'Dwuetapowe uwierzytelnianie zostało wyłączone.');
     }
 }
