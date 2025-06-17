@@ -1,75 +1,65 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="bg-[#002d62] text-white py-5">
-            <h2 class="font-bold text-2xl text-center">Lista&nbsp;Konkursów</h2>
-        </div>
+        <header class="bg-[#eaf0f6] border-b border-[#cdd7e4] py-6">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-[#002d62] text-center">Lista Konkursów</h2>
+            </div>
+        </header>
     </x-slot>
 
-    <div class="py-10">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
+    <div class="py-12 bg-[#f9fbfd] min-h-screen">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
-            <form method="GET" action="{{ route('competitions.index') }}" class="mb-6 flex flex-wrap gap-4 items-center">
-                <input type="text" name="search"
-                    value="{{ request('search') }}"
-                    placeholder="Szukaj konkursu..."
-                    class="border border-gray-300 rounded px-4 py-2 w-full sm:w-80">
-
+            {{-- FORMULARZ WYSZUKIWANIA --}}
+            <form method="GET" action="{{ route('competitions.index') }}" class="flex flex-wrap gap-4 items-center">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Szukaj konkursu..."
+                       class="border border-[#cdd7e4] rounded-xl px-4 py-2 w-full sm:w-80 shadow-sm">
                 <button type="submit"
-                        class="bg-[#002d62] text-white px-4 py-2 rounded hover:bg-[#001b3e] transition">
+                        class="bg-[#002d62] text-white px-5 py-2 rounded-xl hover:bg-[#001b3e] transition">
                     🔍 Szukaj
                 </button>
             </form>
 
-            {{-- przycisk „Dodaj nowy” – tylko admin / organizator --}}
+            {{-- PRZYCISK DODAWANIA NOWEGO KONKURSU --}}
             @auth
                 @if(auth()->user()->role === 'admin' || auth()->user()->role === 'organizator')
                     <a href="{{ route('competitions.create') }}"
-                       class="bg-[#002d62] text-white px-5 py-3 rounded-lg inline-block hover:bg-[#001b3e] transition mb-6">
+                       class="inline-block bg-[#002d62] text-white px-6 py-3 rounded-xl hover:bg-[#001b3e] transition font-semibold">
                         ➕ Dodaj nowy konkurs
                     </a>
                 @endif
             @endauth
 
+            {{-- LISTA KONKURSÓW --}}
             @foreach ($competitions as $competition)
                 <a href="{{ route('competitions.show', $competition) }}"
-                   class="block bg-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition rounded-lg overflow-hidden">
-
-                    {{-- ▶️ jeśli jest plakat – układ „obraz + treść”, inaczej tylko treść --}}
-                    @if($competition->poster_path)
-                        <div class="flex flex-col md:flex-row">
-                            <div class="md:w-48 md:flex-shrink-0">
+                   class="block bg-white border border-[#cdd7e4] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
+                    <div class="flex flex-col md:flex-row">
+                        @if($competition->poster_path)
+                            <div class="md:w-64 w-full h-48 md:h-auto relative">
                                 <img src="{{ Storage::url($competition->poster_path) }}"
                                      alt="Plakat {{ $competition->name }}"
-                                     class="w-full h-48 md:h-full object-cover">
+                                     class="absolute inset-0 w-full h-full object-cover object-center md:rounded-l-2xl">
                             </div>
-
-                            <div class="p-5 flex-1 min-w-0">
-                                <h3 class="text-xl font-semibold text-[#002d62] mb-1 break-words">
-                                    {{ $competition->name }}
-                                </h3>
-                                <p class="text-gray-600 mb-2 line-clamp-2 break-words">
-                                    {{ $competition->description }}
-                                </p>
-                                <p class="text-sm text-gray-500">
-                                    📅 {{ $competition->start_date }} &nbsp;–&nbsp; {{ $competition->end_date }}
-                                </p>
-                            </div>
-                        </div>
-                    @else
-                        <div class="p-5">
-                            <h3 class="text-xl font-semibold text-[#002d62] mb-1 break-words">
+                        @endif
+                        <div class="p-6 flex-1 min-w-0">
+                            <h3 class="text-xl font-bold text-[#002d62] mb-2 break-words">
                                 {{ $competition->name }}
                             </h3>
-                            <p class="text-gray-600 mb-2 line-clamp-2 break-words">
-                                {{ $competition->description }}
+                            <p class="text-gray-700 text-sm mb-3 line-clamp-3">
+                                {{ Str::limit(strip_tags($competition->description), 150, '...') }}
                             </p>
                             <p class="text-sm text-gray-500">
-                                📅 {{ $competition->start_date }} &nbsp;–&nbsp; {{ $competition->end_date }}
+                                📅 {{ \Carbon\Carbon::parse($competition->start_date)->format('d.m.Y') }}
+                                @if($competition->end_date)
+                                    – {{ \Carbon\Carbon::parse($competition->end_date)->format('d.m.Y') }}
+                                @endif
                             </p>
                         </div>
-                    @endif
+                    </div>
                 </a>
             @endforeach
+
         </div>
     </div>
 </x-app-layout>
