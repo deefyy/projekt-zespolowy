@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Import Zgłoszeń: Uzupełnij Brakujące Mapowania') }}
+            {{ __('Import Submissions: Fill in Missing Mappings') }}
         </h2>
     </x-slot>
 
@@ -17,7 +17,7 @@
                     @endif
 
                     <p class="mb-4 text-gray-600 dark:text-gray-400">
-                        {{ __('System nie znalazł automatycznego dopasowania dla poniższych pól. Wybierz z listy nagłówek z Twojego pliku, który odpowiada wymaganemu polu systemowemu.') }}
+                        {{ __('The system could not automatically match the following fields. Please select the header from your file that corresponds to the required system field.') }}
                     </p>
 
                     <form action="{{ route('competitions.handleMapping', $competition) }}" method="POST">
@@ -27,11 +27,11 @@
                                 @foreach($unmatchedHeaders as $expected)
                                     <div>
                                         <label for="mapping_{{ Str::slug($expected) }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                            {{ __('Wymagane pole:') }} <strong class="italic">"{{ $expected }}"</strong>
+                                            {{ __('Required field:') }} <strong class="italic">"{{ $expected }}"</strong>
                                         </label>
                                         <select name="column_mappings[{{ $expected }}]" id="mapping_{{ Str::slug($expected) }}"
                                                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                            <option value="">-- {{ __('Wybierz kolumnę z Twojego pliku') }} --</option>
+                                            <option value="">-- {{ __('-- Select a column from your file --') }} --</option>
                                             @if(!empty($availableHeadings))
                                                 @foreach($availableHeadings as $actual)
                                                     <option value="{{ $actual }}" @if(old('column_mappings.'.$expected) === $actual) selected @endif>
@@ -47,7 +47,7 @@
 
                         <div class="mt-8">
                             <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
-                                {{ __('Przejdź do podsumowania') }}
+                                {{ __('Proceed to Summary') }}
                             </button>
                         </div>
                     </form>

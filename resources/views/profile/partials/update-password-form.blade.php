@@ -1,11 +1,11 @@
 <section>
     <header class="mb-6">
         <h2 class="text-xl font-bold text-[#002d62]">
-            {{ __('Zmień hasło') }}
+            {{ __('Update Password') }}
         </h2>
 
         <p class="mt-2 text-sm text-gray-600">
-            {{ __('Upewnij się, że Twoje hasło jest długie i trudne do odgadnięcia.') }}
+            {{ __('Ensure your account is using a long, random password to stay secure.') }}
         </p>
     </header>
 
@@ -15,7 +15,7 @@
 
         {{-- Obecne hasło --}}
         <div>
-            <x-input-label for="update_password_current_password" :value="__('Obecne hasło')" class="text-[#002d62]" />
+            <x-input-label for="update_password_current_password" value="{{ __('Current Password') }}" class="text-[#002d62]" />
             <x-text-input
                 id="update_password_current_password"
                 name="current_password"
@@ -28,7 +28,7 @@
 
         {{-- Nowe hasło --}}
         <div>
-            <x-input-label for="update_password_password" :value="__('Nowe hasło')" class="text-[#002d62]" />
+            <x-input-label for="update_password_password" value="{{ __('New Password') }}" class="text-[#002d62]" />
             <x-text-input
                 id="update_password_password"
                 name="password"
@@ -41,7 +41,7 @@
 
         {{-- Potwierdzenie nowego hasła --}}
         <div>
-            <x-input-label for="update_password_password_confirmation" :value="__('Potwierdź hasło')" class="text-[#002d62]" />
+            <x-input-label for="update_password_password_confirmation" value="{{ __('Confirm Password') }}" class="text-[#002d62]" />
             <x-text-input
                 id="update_password_password_confirmation"
                 name="password_confirmation"
@@ -55,7 +55,7 @@
         {{-- Zapisz --}}
         <div class="flex items-center gap-4">
             <x-primary-button class="bg-[#002d62] hover:bg-[#001b3e] rounded-xl px-6 py-2">
-                {{ __('Zapisz') }}
+                {{ __('Save') }}
             </x-primary-button>
 
             @if (session('status') === 'password-updated')
@@ -65,7 +65,7 @@
                     x-transition
                     x-init="setTimeout(() => show = false, 2000)"
                     class="text-sm text-green-700"
-                >{{ __('Zapisano.') }}</p>
+                >{{ __('Saved.') }}</p>
             @endif
         </div>
     </form>
