@@ -114,7 +114,7 @@
     @endif
 
     <a href="{{ route('competitions.exportRegistrations', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">Eksportuj do Excela</a>
-    <a href="{{ route('competitions.showImportRegistrationsForm', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">Importuj z Excela</a>
+    <a href="{{ route('competitions.showImportForm', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">Importuj z Excela</a>
     <a href="{{ route('competitions.points.edit', $competition) }}" class="block bg-indigo-600 text-white text-center py-2 px-3 rounded hover:bg-indigo-700">Zarządzaj punktami</a>
 
     @if(!$isCoOrganizer)
