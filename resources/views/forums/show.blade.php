@@ -13,8 +13,8 @@
       <a href="{{ route('forums.index') }}" class="text-blue-600 hover:underline">← {{ __('Back to post list') }}</a>
 
       <section class="bg-white shadow p-6 rounded-xl border border-[#cdd7e4] space-y-2">
-        <h2 class="text-2xl font-bold text-[#002d62]">{{ $forum->title ?? $forum->topic }}</h2>
-        <p class="text-sm text-gray-600">{{ __('Competition') }}: {{ $forum->competition->name }} | {{ __('Added') }}: {{ $forum->created_at->format('Y-m-d H:i') }}</p>
+        <h2 class="text-2xl font-bold text-[#002d62] break-words">{{ $forum->title ?? $forum->topic }}</h2>
+        <p class="text-sm text-gray-600 break-words">{{ __('Competition') }}: {{ $forum->competition->name }} | {{ __('Added') }}: {{ $forum->created_at->format('Y-m-d H:i') }}</p>
         @if($forum->content ?? $forum->description)
           <div class="mt-4 text-gray-800 break-words whitespace-pre-line">
             {{ $forum->content ?? $forum->description }}
