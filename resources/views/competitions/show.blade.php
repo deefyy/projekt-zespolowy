@@ -1,11 +1,7 @@
 @php
-    $currentSort = request('sort');
-    $currentDirection = request('direction') ?? 'asc';
-
     function sortIcon($column) {
         $sort = request('sort');
         $direction = request('direction', 'asc');
-
         if ($sort === $column) {
             return $direction === 'asc' ? '▲' : '▼';
         }
@@ -18,9 +14,7 @@
         $nextDirection = ($currentSort === $column && $currentDirection === 'asc') ? 'desc' : 'asc';
         $search = request('search');
         $perPage = request('perPage', 10);
-
         $url = url()->current() . "?sort={$column}&direction={$nextDirection}&search={$search}&perPage={$perPage}";
-
         return "<a href=\"{$url}\" class=\"hover:underline\">{$label} <span class=\"sort-icon\">" . sortIcon($column) . "</span></a>";
     }
 @endphp
@@ -29,7 +23,7 @@
   <x-slot name="header">
     <header class="bg-[#eaf0f6] border-b border-[#cdd7e4] py-6">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-[#002d62] text-center">Szczegóły konkursu</h2>
+        <h2 class="text-3xl font-bold text-[#002d62] text-center">{{ __('Competition Details') }}</h2>
       </div>
     </header>
   </x-slot>
@@ -44,14 +38,14 @@
           @if($competition->poster_path)
             <div>
               <img src="{{ Storage::url($competition->poster_path) }}"
-                   alt="Plakat konkursu {{ $competition->name }}"
+                   alt="{{ __('Poster for competition') }} {{ $competition->name }}"
                    class="w-full max-h-96 object-contain rounded-xl shadow">
             </div>
           @endif
 
-          <p class="text-sm text-gray-500">Liczba etapów: {{ $competition->stages_count }}</p>
-          <p class="text-sm text-gray-500">Od: {{ $competition->start_date }} do: {{ $competition->end_date }}</p>
-          <p class="text-sm text-gray-500 mb-4">Zapisy do: {{ $competition->registration_deadline }}</p>
+          <p class="text-sm text-gray-500">{{ __('Stages') }}: {{ $competition->stages_count }}</p>
+          <p class="text-sm text-gray-500">{{ __('From') }}: {{ $competition->start_date }} {{ __('To') }}: {{ $competition->end_date }}</p>
+          <p class="text-sm text-gray-500 mb-4">{{ __('Registration until') }}: {{ $competition->registration_deadline }}</p>
 
           @if(session('success'))
             <div class="p-4 bg-green-100 text-green-800 rounded">{{ session('success') }}</div>
@@ -63,50 +57,49 @@
             @if(now()->lessThanOrEqualTo($competition->registration_deadline))
               <a href="{{ route('competitions.showRegisterForm', $competition) }}"
                  class="inline-block bg-[#002d62] text-white px-4 py-2 rounded-xl hover:bg-[#001b3e]">
-                Zarejestruj uczniów
+                {{ __('Register students') }}
               </a>
             @else
-              <p class="text-red-600 font-semibold">Rejestracja została zakończona.</p>
+              <p class="text-red-600 font-semibold">{{ __('Registration has ended.') }}</p>
             @endif
           @endauth
 
           @guest
             <p class="text-red-600 font-semibold">
-              <a href="{{ route('login') }}" class="underline">Zaloguj się</a>, aby zapisać uczniów na konkurs.
+              <a href="{{ route('login') }}" class="underline">{{ __('Log In') }}</a>, {{ strtolower(__('to register students for the competition.')) }}
             </p>
           @endguest
         </div>
 
-        {{-- Panel boczny zarządzania --}}
         @auth
         @php
             $user = auth()->user();
             $isAdmin = $user?->role === 'admin';
             $isOwner = $user?->id && $competition->user_id === $user->id;
-            $isCoOrganizer = $competition->coOrganizers()->where('user_id', $user->id)->exists();
+            $isCoOrganizer = $user?->id && $competition->coOrganizers()->where('user_id', $user->id)->exists();
         @endphp
 
         @if($isAdmin || $isOwner || $isCoOrganizer)
         <div class="bg-[#eaf0f6] border border-[#cdd7e4] p-4 rounded-xl space-y-3 h-fit">
-          <h3 class="text-lg font-bold text-[#002d62] mb-3">Zarządzanie konkursem</h3>
+          <h3 class="text-lg font-bold text-[#002d62] mb-3">{{ __('Competition Management') }}</h3>
           <a href="{{ route('competitions.edit', $competition) }}" class="block bg-yellow-500 text-white text-center py-2 px-3 rounded hover:bg-yellow-600">
-            Edytuj konkurs
+            {{ __('Edit competition') }}
           </a>
           @if(!$isCoOrganizer)
-          <form action="{{ route('competitions.destroy', $competition) }}" method="POST" onsubmit="return confirm('Czy na pewno chcesz usunąć ten konkurs?');">
+          <form action="{{ route('competitions.destroy', $competition) }}" method="POST" onsubmit="return confirm('{{ __('Are you sure you want to delete this competition?') }}');">
             @csrf
             @method('DELETE')
-            <button type="submit" class="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700">Usuń konkurs</button>
+            <button type="submit" class="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700">{{ __('Delete competition') }}</button>
           </form>
           @endif
           <a href="{{ route('competitions.exportRegistrations', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">
-            Eksportuj do Excela
+            {{ __('Export to Excel') }}
           </a>
           <a href="{{ route('competitions.showImportForm', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">
-            Importuj z Excela
+            {{ __('Import from Excel') }}
           </a>
           <a href="{{ route('competitions.points.edit', $competition) }}" class="block bg-indigo-600 text-white text-center py-2 px-3 rounded hover:bg-indigo-700">
-            Zarządzaj punktami
+            {{ __('Manage points') }}
           </a>
 
           @if(!$isCoOrganizer)
@@ -128,8 +121,8 @@
 
           <form action="{{ route('competitions.inviteCoorganizer', $competition) }}" method="POST" class="mt-4">
             @csrf
-            <input type="email" name="email" required placeholder="Email współorganizatora" class="form-input border border-gray-300 rounded px-3 py-2 w-full mb-2" />
-            <button type="submit" class="w-full bg-[#002d62] text-white py-2 rounded hover:bg-[#001b3c]">Dodaj współorganizatora</button>
+            <input type="email" name="email" required placeholder="{{ __('Co-organizer email') }}" class="form-input border border-gray-300 rounded px-3 py-2 w-full mb-2" />
+            <button type="submit" class="w-full bg-[#002d62] text-white py-2 rounded hover:bg-[#001b3c]">{{ __('Add co-organizer') }}</button>
           </form>
           @endif
         </div>
@@ -137,11 +130,10 @@
         @endauth
       </div>
 
-      {{-- Tabela uczniów --}}
       @auth
         @if($userRegistrations->count() > 0)
           <div class="mt-12 bg-white p-6 rounded-xl shadow">
-            <h3 class="text-xl font-bold text-[#002d62] mb-4">Twoi zapisani uczniowie:</h3>
+            <h3 class="text-xl font-bold text-[#002d62] mb-4">{{ __('Your registered students:') }}</h3>
 
             <form method="GET" class="mb-4 flex flex-wrap gap-4 items-end">
               @foreach (request()->except('search', 'page') as $key => $value)
@@ -149,13 +141,13 @@
               @endforeach
 
               <div>
-                <label for="search" class="block text-sm font-medium text-gray-700">Szukaj ucznia</label>
-                <input type="text" name="search" id="search" value="{{ request('search') }}" class="border-gray-300 rounded w-48" placeholder="Imię, nazwisko, klasa, szkoła..." />
+                <label for="search" class="block text-sm font-medium text-gray-700">{{ __('Search student') }}</label>
+                <input type="text" name="search" id="search" value="{{ request('search') }}" class="border-gray-300 rounded w-48" placeholder="{{ __('Name, surname, class, school...') }}" />
               </div>
 
               <div>
                 <button type="submit" class="bg-[#002d62] text-white px-4 py-2 rounded hover:bg-[#001b3c] mt-5">
-                  Szukaj
+                  {{ __('Search') }}
                 </button>
               </div>
             </form>
@@ -164,14 +156,14 @@
               <table class="min-w-full bg-white border border-gray-200 rounded">
                 <thead class="bg-gray-100">
                   <tr>
-                    <th class="text-left px-4 py-2 border-b">{!! sortLink('student.name', 'Imię') !!}</th>
-                    <th class="text-left px-4 py-2 border-b">{!! sortLink('student.last_name', 'Nazwisko') !!}</th>
-                    <th class="text-left px-4 py-2 border-b">{!! sortLink('student.class', 'Klasa') !!}</th>
-                    <th class="text-left px-4 py-2 border-b">{!! sortLink('student.school', 'Szkoła') !!}</th>
+                    <th class="text-left px-4 py-2 border-b">{!! sortLink('student.name', __('Name')) !!}</th>
+                    <th class="text-left px-4 py-2 border-b">{!! sortLink('student.last_name', __('Surname')) !!}</th>
+                    <th class="text-left px-4 py-2 border-b">{!! sortLink('student.class', __('Class')) !!}</th>
+                    <th class="text-left px-4 py-2 border-b">{!! sortLink('student.school', __('School')) !!}</th>
                     @foreach($competition->stages as $stage)
-                      <th class="text-center px-4 py-2 border-b">Etap {{ $stage->stage }}</th>
+                      <th class="text-center px-4 py-2 border-b">{{ __('Stage') }} {{ $stage->stage }}</th>
                     @endforeach
-                    <th class="text-left px-4 py-2 border-b">Akcje</th>
+                    <th class="text-left px-4 py-2 border-b">{{ __('Actions') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -195,14 +187,14 @@
                         @endforeach
                         <td class="px-4 py-2 border-b">
                           @if($canEditOrDelete)
-                            <a href="{{ route('students.edit', $reg->student->id) }}" class="text-blue-500 hover:underline mr-2">Edytuj</a>
-                            <form action="{{ route('students.destroy', $reg->student->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Na pewno chcesz usunąć ucznia?');">
+                            <a href="{{ route('students.edit', $reg->student->id) }}" class="text-blue-500 hover:underline mr-2">{{ __('Edit') }}</a>
+                            <form action="{{ route('students.destroy', $reg->student->id) }}" method="POST" class="inline-block" onsubmit="return confirm('{{ __("Are you sure you want to delete this student?") }}');">
                               @csrf
                               @method('DELETE')
-                              <button type="submit" class="text-red-500 hover:underline" data-skip-lock>Usuń</button>
+                              <button type="submit" class="text-red-500 hover:underline" data-skip-lock>{{ __('Delete') }}</button>
                             </form>
                           @else
-                            <span class="text-gray-400 italic">Brak dostępu</span>
+                            <span class="text-gray-400 italic">{{ __('No access') }}</span>
                           @endif
                         </td>
                       </tr>
@@ -217,13 +209,13 @@
                 <input type="hidden" name="{{ $key }}" value="{{ $value }}">
               @endforeach
               <label class="text-sm font-medium text-gray-700">
-                Pokaż
+                {{ __('Show') }}
                 <select name="perPage" class="border-gray-300 rounded mx-1" onchange="this.form.submit()">
                   @foreach([10, 20, 50, 100] as $size)
                     <option value="{{ $size }}" {{ request('perPage', 10) == $size ? 'selected' : '' }}>{{ $size }}</option>
                   @endforeach
                 </select>
-                wpisów na stronę
+                {{ __('entries per page') }}
               </label>
             </form>
 
@@ -232,7 +224,7 @@
         @endif
       @endauth
 
-      <a href="{{ route('competitions.index') }}" class="text-blue-500 hover:underline block mt-6">← Wróć do listy konkursów</a>
+      <a href="{{ route('competitions.index') }}" class="text-blue-500 hover:underline block mt-6">← {{ __('Back to competitions list') }}</a>
     </div>
   </div>
 </x-app-layout>

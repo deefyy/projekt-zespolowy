@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         'owner' => \App\Http\Middleware\EnsureCompetitionManager::class,
         'organizer' => \App\Http\Middleware\EnsureUserIsOrganizer::class,
         ]);
+        $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

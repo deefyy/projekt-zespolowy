@@ -3,7 +3,7 @@
     <header class="bg-[#eaf0f6] border-b border-[#cdd7e4] py-6">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="text-3xl font-bold text-[#002d62] text-center">
-          Edytuj ucznia: {{ $student->name }} {{ $student->last_name }}
+          {{ __('Edit student') }}: {{ $student->name }} {{ $student->last_name }}
         </h2>
       </div>
     </header>
@@ -28,34 +28,34 @@
 
         @php
           $fields = [
-            ['name', 'Imię', true],
-            ['last_name', 'Nazwisko', true],
-            ['school', 'Szkoła', true],
-            ['school_address', 'Adres Szkoły', false],
-            ['teacher', 'Nauczyciel', false],
-            ['guardian', 'Opiekun', false],
-            ['contact', 'Kontakt (e-mail lub tel.)', true],
+            'name' => ['label' => __('First name'), 'required' => true],
+            'last_name' => ['label' => __('Last name'), 'required' => true],
+            'school' => ['label' => __('School'), 'required' => true],
+            'school_address' => ['label' => __('School address'), 'required' => false],
+            'teacher' => ['label' => __('Teacher'), 'required' => false],
+            'guardian' => ['label' => __('Guardian'), 'required' => false],
+            'contact' => ['label' => __('Contact (e-mail or phone)'), 'required' => true],
           ];
         @endphp
 
-        @foreach ($fields as [$field, $label, $required])
+        @foreach ($fields as $field => $details)
           <div>
-            <label class="block text-sm font-medium text-gray-700">{{ $label }}</label>
+            <label class="block text-sm font-medium text-gray-700">{{ $details['label'] }}</label>
             <input type="text"
                    name="{{ $field }}"
                    value="{{ old($field, $student->$field) }}"
                    maxlength="255"
                    oninput="updateCounter(this)"
                    class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 char-field"
-                   @if($required) required @endif>
-            <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 znaków</p>
+                   @if($details['required']) required @endif>
+            <p class="text-xs text-gray-500 mt-1"><span class="count">0</span>/255 {{ __('characters') }}</p>
           </div>
         @endforeach
 
         <div>
-          <label class="block text-sm font-medium text-gray-700">Klasa</label>
+          <label class="block text-sm font-medium text-gray-700">{{ __('Class') }}</label>
           <select name="class" class="mt-1 block w-full border border-gray-300 rounded px-3 py-2" required>
-            <option value="" disabled>– wybierz –</option>
+            <option value="" disabled>{{ __('-- select --') }}</option>
             @foreach(($classes ?? []) as $c)
               <option value="{{ $c }}" {{ old('class', $student->class) == $c ? 'selected' : '' }}>
                 {{ $c }}
@@ -68,12 +68,12 @@
           <input type="checkbox" name="statement" value="1"
                  class="form-checkbox h-5 w-5 text-blue-600"
                  {{ old('statement', $student->statement) ? 'checked' : '' }}>
-          <label class="text-sm text-gray-700">Wyrażam zgodę na przetwarzanie danych osobowych</label>
+          <label class="text-sm text-gray-700">{{ __('I agree to the processing of my personal data') }}</label>
         </div>
 
         <div class="flex justify-end">
           <button type="submit" class="bg-[#002d62] text-white px-6 py-2 rounded hover:bg-[#001b3c]">
-            Zapisz zmiany
+            {{ __('Save changes') }}
           </button>
         </div>
       </form>
@@ -83,7 +83,7 @@
                   ? route('competitions.show', $registration->competition->id)
                   : route('competitions.index') }}"
          class="text-blue-500 hover:underline mt-6 inline-block">
-        ← Wróć do {{ $registration && $registration->competition ? 'konkursu' : 'listy konkursów' }}
+        ← {{ $registration && $registration->competition ? __('Back to competition') : __('Back to competitions list') }}
       </a>
     </div>
   </div>

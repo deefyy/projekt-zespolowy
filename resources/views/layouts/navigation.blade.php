@@ -18,7 +18,14 @@
                 </div>
             </div>
 
+            
+
             <div class="hidden sm:flex items-center gap-4">
+                <div class="flex items-center gap-2 text-white text-base font-semibold">
+                    <a href="{{ route('language.set', 'pl') }}" class="{{ session('locale', 'pl') == 'pl' ? 'underline' : 'opacity-75' }} hover:opacity-100">PL</a>
+                    <span>/</span>
+                    <a href="{{ route('language.set', 'en') }}" class="{{ session('locale', 'pl') == 'en' ? 'underline' : 'opacity-75' }} hover:opacity-100">EN</a>
+                </div>
                 {{-- WCAG IKONY --}}
                 <div class="flex items-center gap-2 text-white text-base">
                     <button onclick="resetWCAGSettings()" class="px-2 py-1 hover:bg-white hover:text-[#002d62] rounded transition border border-transparent hover:border-white">A</button>

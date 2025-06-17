@@ -2,7 +2,7 @@
     <x-slot name="header">
         <header class="bg-[#eaf0f6] border-b border-[#cdd7e4] py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl font-bold text-[#002d62] text-center">Lista Konkursów</h2>
+                <h2 class="text-3xl font-bold text-[#002d62] text-center">{{ __('Competition List') }}</h2>
             </div>
         </header>
     </x-slot>
@@ -12,11 +12,11 @@
 
             {{-- FORMULARZ WYSZUKIWANIA --}}
             <form method="GET" action="{{ route('competitions.index') }}" class="flex flex-wrap gap-4 items-center">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Szukaj konkursu..."
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('Search for a competition...') }}"
                        class="border border-[#cdd7e4] rounded-xl px-4 py-2 w-full sm:w-80 shadow-sm">
                 <button type="submit"
                         class="bg-[#002d62] text-white px-5 py-2 rounded-xl hover:bg-[#001b3e] transition">
-                    🔍 Szukaj
+                    🔍 {{ __('Search') }}
                 </button>
             </form>
 
@@ -25,7 +25,7 @@
                 @if(auth()->user()->role === 'admin' || auth()->user()->role === 'organizator')
                     <a href="{{ route('competitions.create') }}"
                        class="inline-block bg-[#002d62] text-white px-6 py-3 rounded-xl hover:bg-[#001b3e] transition font-semibold">
-                        ➕ Dodaj nowy konkurs
+                        ➕ {{ __('Add new competition') }}
                     </a>
                 @endif
             @endauth
@@ -38,7 +38,7 @@
                         @if($competition->poster_path)
                             <div class="md:w-64 w-full h-48 md:h-auto relative">
                                 <img src="{{ Storage::url($competition->poster_path) }}"
-                                     alt="Plakat {{ $competition->name }}"
+                                     alt="{{ __('Poster for') }} {{ $competition->name }}"
                                      class="absolute inset-0 w-full h-full object-cover object-center md:rounded-l-2xl">
                             </div>
                         @endif
@@ -51,7 +51,7 @@
                             </p>
                             <p class="text-sm text-gray-500">
                                 📅 {{ \Carbon\Carbon::parse($competition->start_date)->format('d.m.Y') }}
-                                @if($competition->end_date)
+                                @if($competition->end_date && $competition->end_date != $competition->start_date)
                                     – {{ \Carbon\Carbon::parse($competition->end_date)->format('d.m.Y') }}
                                 @endif
                             </p>

@@ -7,8 +7,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ForumCommentController;
 use App\Http\Controllers\ForumController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LocalizationController;
 
-
+Route::get('language/{locale}', [LocalizationController::class, 'setLocale'])->name('language.set');
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('dashboard');

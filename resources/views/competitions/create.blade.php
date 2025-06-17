@@ -2,7 +2,7 @@
    <x-slot name="header">
         <header class="bg-[#eaf0f6] border-b border-[#cdd7e4] py-6">
             <div class="px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl font-bold text-[#002d62] text-center">Dodaj nowy konkurs</h2>
+                <h2 class="text-3xl font-bold text-[#002d62] text-center">{{ __('Add new competition') }}</h2>
             </div>
         </header>
     </x-slot>
@@ -12,7 +12,6 @@
 
             <div class="bg-white shadow-md rounded-xl p-8">
 
-                {{-- komunikaty walidacji --}}
                 @if ($errors->any())
                     <div class="mb-6 p-4 bg-red-100 rounded text-sm text-red-800 border border-red-300">
                         <ul class="list-disc pl-5 space-y-1">
@@ -29,9 +28,8 @@
                       class="space-y-6">
                     @csrf
 
-                    {{-- Nazwa --}}
                     <div>
-                        <label for="name" class="block text-sm font-medium text-gray-700">Nazwa konkursu</label>
+                        <label for="name" class="block text-sm font-medium text-gray-700">{{ __('Competition name') }}</label>
                         <input type="text"
                                name="name"
                                id="name"
@@ -40,12 +38,11 @@
                                oninput="updateNameCount()"
                                class="mt-1 w-full border border-gray-300 rounded px-4 py-2 shadow-sm focus:ring-[#002d62] focus:border-[#002d62]"
                                required>
-                        <p class="text-xs text-gray-500 mt-1"><span id="name_count">0</span>/255 znaków</p>
+                        <p class="text-xs text-gray-500 mt-1"><span id="name_count">0</span>/255 {{ __('characters') }}</p>
                     </div>
 
-                    {{-- Opis --}}
                     <div>
-                        <label for="description" class="block text-sm font-medium text-gray-700">Opis</label>
+                        <label for="description" class="block text-sm font-medium text-gray-700">{{ __('Description') }}</label>
                         <textarea name="description"
                                   id="description"
                                   maxlength="1000"
@@ -53,21 +50,19 @@
                                   oninput="updateDescCount()"
                                   class="mt-1 w-full border border-gray-300 rounded px-4 py-2 shadow-sm focus:ring-[#002d62] focus:border-[#002d62]"
                                   required>{{ old('description') }}</textarea>
-                        <p class="text-xs text-gray-500 mt-1"><span id="desc_count">0</span>/1000 znaków</p>
+                        <p class="text-xs text-gray-500 mt-1"><span id="desc_count">0</span>/1000 {{ __('characters') }}</p>
                     </div>
 
-                    {{-- Plakat --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Plakat (max 2&nbsp;MB)</label>
+                        <label class="block text-sm font-medium text-gray-700">{{ __('Poster (max 2MB)') }}</label>
                         <input type="file"
                                name="poster"
                                accept="image/*"
                                class="mt-1 w-full border border-gray-300 rounded px-4 py-2 shadow-sm">
                     </div>
 
-                    {{-- Ilość etapów --}}
                     <div>
-                        <label for="stages_count" class="block text-sm font-medium text-gray-700">Ilość etapów</label>
+                        <label for="stages_count" class="block text-sm font-medium text-gray-700">{{ __('Number of stages') }}</label>
                         <input type="number"
                                name="stages_count"
                                id="stages_count"
@@ -77,12 +72,11 @@
                                required>
                     </div>
 
-                    {{-- Daty --}}
                     @php($today = now()->toDateString())
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Data rozpoczęcia</label>
+                            <label class="block text-sm font-medium text-gray-700">{{ __('Start date') }}</label>
                             <input type="date"
                                    name="start_date"
                                    min="{{ $today }}"
@@ -92,7 +86,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Data zakończenia</label>
+                            <label class="block text-sm font-medium text-gray-700">{{ __('End date') }}</label>
                             <input type="date"
                                    name="end_date"
                                    min="{{ $today }}"
@@ -102,7 +96,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Koniec zapisów</label>
+                            <label class="block text-sm font-medium text-gray-700">{{ __('Registration deadline') }}</label>
                             <input type="date"
                                    name="registration_deadline"
                                    min="{{ $today }}"
@@ -115,7 +109,7 @@
                     <div class="flex justify-end mt-6">
                         <button type="submit"
                                 class="bg-[#002d62] hover:bg-[#001b3c] text-white font-semibold px-6 py-2 rounded-lg transition">
-                            ➕ Zapisz konkurs
+                            ➕ {{ __('Save competition') }}
                         </button>
                     </div>
                 </form>
