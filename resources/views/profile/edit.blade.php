@@ -109,7 +109,7 @@
                         </form>
                     @else
                         <p class="text-sm text-gray-600 mb-2">{{ __('Confirm your password to access this feature.') }}</p>
-                        <form method="POST" action="{{ route('password.confirm') }}">
+                        <form method="POST" action="/user/two-factor-authentication">
                             @csrf
                              <x-primary-button>{{ __('Confirm password') }}</x-primary-button>
                         </form>
