@@ -49,10 +49,10 @@
                     <textarea name="description"
                               id="description"
                               class="form-input rounded-md shadow-sm mt-1 block w-full"
-                              maxlength="255"
+                              maxlength="1000"
                               oninput="updateDescCount()"
                               required>{{ old('description') }}</textarea>
-                    <p class="text-xs text-gray-500 mt-1"><span id="desc_count">0</span>/255 znaków</p>
+                    <p class="text-xs text-gray-500 mt-1"><span id="desc_count">0</span>/1000 znaków</p>
                 </div>
 
                 {{-- Plakat (JPG/PNG/WEBP) --}}
