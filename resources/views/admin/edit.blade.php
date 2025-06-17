@@ -2,74 +2,60 @@
     <x-slot name="header">
         <header class="bg-[#eaf0f6] border-b border-[#cdd7e4] py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h1 class="text-2xl font-bold text-[#002d62] m-0">Edytuj użytkownika</h1>
+                <h1 class="text-3xl font-bold text-[#002d62] text-center">Edytuj użytkownika</h1>
             </div>
         </header>
     </x-slot>
 
-    <div class="container py-4">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <form id="editUserForm" method="POST" action="{{ route('admin.updateUser', $user->id) }}">
-                            @csrf
-                            @method('PUT')
+    <div class="py-12 bg-[#f9fbfd] min-h-screen">
+        <div class="max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-md border border-[#cdd7e4]">
+            <form id="editUserForm" method="POST" action="{{ route('admin.updateUser', $user->id) }}" class="space-y-6">
+                @csrf
+                @method('PUT')
 
-                            <div class="mb-3">
-                                <label for="name" class="form-label fw-semibold text-[#002d62]">Imię</label>
-                                <input type="text" name="name" id="name" class="form-control border border-[#002d62]" value="{{ $user->name }}" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="last_name" class="form-label fw-semibold text-[#002d62]">Nazwisko</label>
-                                <input type="text" name="last_name" id="last_name" class="form-control border border-[#002d62]" value="{{ $user->last_name }}">
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="email" class="form-label fw-semibold text-[#002d62]">Email</label>
-                                <input type="email" name="email" id="email" class="form-control border border-[#002d62]" value="{{ $user->email }}" required>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="role" class="form-label fw-semibold text-[#002d62]">Rola</label>
-                                <select name="role" id="role" class="form-select border border-[#002d62]" required>
-                                    <option value="user" {{ old('role', $user->role ?? '') == 'user' ? 'selected' : '' }}>Użytkownik</option>
-                                    <option value="admin" {{ old('role', $user->role ?? '') == 'admin' ? 'selected' : '' }}>Administrator</option>
-                                    <option value="organizator" {{ old('role', $user->role ?? '') == 'organizator' ? 'selected' : '' }}>Organizator</option>
-                                </select>
-                            </div>
-
-                            <div class="d-flex justify-content-between">
-                                <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">
-                                    <i class="bi bi-arrow-left"></i> Wróć
-                                </a>
-                                <button type="button" class="btn" style="background-color: #002d62; color: white;" data-bs-toggle="modal" data-bs-target="#confirmationModal">
-                                    <i class="bi bi-save"></i> Zapisz zmiany
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                <div>
+                    <label for="name" class="block font-semibold text-[#002d62] mb-1">Imię</label>
+                    <input type="text" name="name" id="name" class="w-full border border-[#002d62] rounded-xl px-4 py-2" value="{{ $user->name }}" required>
                 </div>
-            </div>
+
+                <div>
+                    <label for="last_name" class="block font-semibold text-[#002d62] mb-1">Nazwisko</label>
+                    <input type="text" name="last_name" id="last_name" class="w-full border border-[#002d62] rounded-xl px-4 py-2" value="{{ $user->last_name }}">
+                </div>
+
+                <div>
+                    <label for="email" class="block font-semibold text-[#002d62] mb-1">Email</label>
+                    <input type="email" name="email" id="email" class="w-full border border-[#002d62] rounded-xl px-4 py-2" value="{{ $user->email }}" required>
+                </div>
+
+                <div>
+                    <label for="role" class="block font-semibold text-[#002d62] mb-1">Rola</label>
+                    <select name="role" id="role" class="w-full border border-[#002d62] rounded-xl px-4 py-2" required>
+                        <option value="user" {{ old('role', $user->role ?? '') == 'user' ? 'selected' : '' }}>Użytkownik</option>
+                        <option value="admin" {{ old('role', $user->role ?? '') == 'admin' ? 'selected' : '' }}>Administrator</option>
+                        <option value="organizator" {{ old('role', $user->role ?? '') == 'organizator' ? 'selected' : '' }}>Organizator</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-between mt-6">
+                    <a href="{{ route('admin.dashboard') }}" class="inline-block px-6 py-2 border rounded-xl text-[#002d62] border-[#002d62] hover:bg-[#eaf0f6] transition">← Wróć</a>
+
+                    <button type="button" class="px-6 py-2 bg-[#002d62] text-white rounded-xl hover:bg-[#001b3c] transition" onclick="document.getElementById('confirmModal').classList.remove('hidden')">
+                        💾 Zapisz zmiany
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     {{-- Modal potwierdzający --}}
-    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content border-0 shadow-sm">
-                <div class="modal-header bg-light border-bottom-0">
-                    <h5 class="modal-title text-[#002d62]" id="confirmationModalLabel">Potwierdzenie edycji</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted">Czy na pewno chcesz zaktualizować dane tego użytkownika?</p>
-                </div>
-                <div class="modal-footer border-top-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="submit" form="editUserForm" class="btn" style="background-color: #002d62; color: white;">Potwierdź</button>
-                </div>
+    <div id="confirmModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white rounded-xl shadow-lg max-w-md w-full p-6 border border-gray-300">
+            <h2 class="text-lg font-bold text-[#002d62] mb-4">Potwierdzenie edycji</h2>
+            <p class="text-gray-700 mb-6">Czy na pewno chcesz zaktualizować dane tego użytkownika?</p>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('confirmModal').classList.add('hidden')" class="px-4 py-2 border rounded hover:bg-gray-100">Anuluj</button>
+                <button type="submit" form="editUserForm" class="px-4 py-2 bg-[#002d62] text-white rounded hover:bg-[#001b3c]">Potwierdź</button>
             </div>
         </div>
     </div>
