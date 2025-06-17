@@ -187,7 +187,13 @@ class CompetitionController extends Controller
         // Aktualizacja danych konkursu
         $competition->update($validated);
 
-        // 🔍 **Pobranie aktualnej liczby etapów**
+        $competition->update($validated);
+
+            $competition->forum->update([
+                'topic'       => $competition->name,
+                'description' => $competition->description,
+            ]);
+
         $currentStages  = $competition->stages()->count();
         $newStagesCount = $validated['stages_count'];
 
