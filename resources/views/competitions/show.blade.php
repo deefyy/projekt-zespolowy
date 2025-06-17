@@ -92,7 +92,7 @@
             @csrf
             @method('DELETE')
             <h3 class="text-lg font-bold mb-2">Potwierdzenie usunięcia</h3>
-            <p>Czy na pewno chcesz usunąć konkurs <strong>{{ $competition->name }}</strong>?</p>
+            <p class="break-words">Czy na pewno chcesz usunąć konkurs <strong>{{ $competition->name }}</strong>?</p>
             <div class="mt-6 flex justify-end gap-3">
                 <button type="button"
                         onclick="document.getElementById('delete-modal').classList.add('hidden')"
