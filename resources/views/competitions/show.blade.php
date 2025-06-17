@@ -25,6 +25,33 @@
     }
 @endphp
 
+@php
+    $currentSort = request('sort');
+    $currentDirection = request('direction') ?? 'asc';
+
+    function sortIcon($column) {
+        $sort = request('sort');
+        $direction = request('direction', 'asc');
+
+        if ($sort === $column) {
+            return $direction === 'asc' ? '▲' : '▼';
+        }
+        return '↕';
+    }
+
+    function sortLink($column, $label) {
+        $currentSort = request('sort');
+        $currentDirection = request('direction') ?? 'asc';
+        $nextDirection = ($currentSort === $column && $currentDirection === 'asc') ? 'desc' : 'asc';
+        $search = request('search');
+        $perPage = request('perPage', 10);
+
+        $url = url()->current() . "?sort={$column}&direction={$nextDirection}&search={$search}&perPage={$perPage}";
+
+        return "<a href=\"{$url}\" class=\"hover:underline\">{$label} <span class=\"sort-icon\">" . sortIcon($column) . "</span></a>";
+    }
+@endphp
+
 <x-app-layout>
   <x-slot name="header">
     <header class="bg-[#eaf0f6] border-b border-[#cdd7e4] py-6">
@@ -86,12 +113,13 @@
             $isCoOrganizer = $competition->coOrganizers()->where('user_id', $user->id)->exists();
         @endphp
 
-        @if($isAdmin || $isOwner || $isCoOrganizer)
+        @if($isAdmin || $isOwner || $isCoOrganizer ||  $isCoOrganizer)
         <div class="bg-[#eaf0f6] border border-[#cdd7e4] p-4 rounded-xl space-y-3 h-fit">
           <h3 class="text-lg font-bold text-[#002d62] mb-3">Zarządzanie konkursem</h3>
           <a href="{{ route('competitions.edit', $competition) }}" class="block bg-yellow-500 text-white text-center py-2 px-3 rounded hover:bg-yellow-600">
             Edytuj konkurs
           </a>
+          @if(!$isCoOrganizer)
           @if(!$isCoOrganizer)
           <form action="{{ route('competitions.destroy', $competition) }}" method="POST" onsubmit="return confirm('Czy na pewno chcesz usunąć ten konkurs?');">
             @csrf
@@ -99,15 +127,20 @@
             <button type="submit" class="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700">Usuń konkurs</button>
           </form>
           @endif
+          @endif
           <a href="{{ route('competitions.exportRegistrations', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">
             Eksportuj do Excela
+          </a>
+          <a href="{{ route('competitions.showImportForm', $competition) }}"
+             class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">
+            Importuj z Excela
           </a>
           <a href="{{ route('competitions.showImportRegistrationsForm', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">
             Importuj z Excela
           </a>
           <a href="{{ route('competitions.points.edit', $competition) }}" class="block bg-indigo-600 text-white text-center py-2 px-3 rounded hover:bg-indigo-700">
             Zarządzaj punktami
-          </a>
+            </a>
 
           @if(!$isCoOrganizer)
           @if($errors->any())
@@ -132,8 +165,31 @@
             <button type="submit" class="w-full bg-[#002d62] text-white py-2 rounded hover:bg-[#001b3c]">Dodaj współorganizatora</button>
           </form>
           @endif
+
         </div>
+          @if(!$isCoOrganizer)
+        @if($errors->any())
+            <div class="mt-4 p-4 bg-red-100 text-red-800 rounded">
+                <ul class="list-disc pl-5 space-y-1">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
         @endif
+
+        @if(session('status'))
+            <div class="mt-4 p-4 bg-green-100 text-green-800 rounded">
+                {{ session('status') }}
+            </div>
+        @endif
+        <form action="{{ route('competitions.inviteCoorganizer', $competition) }}" method="POST" class="mt-4">
+                @csrf
+                <input type="email" name="email" required placeholder="Co-organizer email" class="form-input" />
+                <button type="submit" class="btn btn-primary">Add Co-Organizer</button>
+        </form>
+        @endif
+      @endif
         @endauth
       </div>
 
@@ -159,6 +215,25 @@
                 </button>
               </div>
             </form>
+
+                      <form method="GET" class="mb-4 flex flex-wrap gap-4 items-end">
+    @foreach (request()->except('search', 'page') as $key => $value)
+        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+    @endforeach
+
+    <div>
+        <label for="search" class="block text-sm font-medium text-gray-700">Szukaj ucznia</label>
+        <input type="text" name="search" id="search" value="{{ request('search') }}"
+               class="border-gray-300 rounded w-48" placeholder="Imię, nazwisko, klasa, szkoła..." />
+    </div>
+
+    <div>
+        <button type="submit"
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-5">
+            Szukaj
+        </button>
+    </div>
+</form>
 
             <div class="overflow-x-auto">
               <table class="min-w-full bg-white border border-gray-200 rounded">

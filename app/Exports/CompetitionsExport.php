@@ -14,7 +14,6 @@ class CompetitionsExport implements FromCollection, WithHeadings, WithMapping, S
     protected Competition $competition;
     protected $user;
     protected $stages;
-    protected int $rowNumber = 0;
 
     public function __construct(Competition $competition)
     {
@@ -26,44 +25,49 @@ class CompetitionsExport implements FromCollection, WithHeadings, WithMapping, S
     public function collection()
     {
         $query = $this->competition->registrations()->with(['student']);
-
         if ($this->user && $this->user->role !== 'admin') {
             $query->where('user_id', $this->user->id);
         }
-
+        $query->orderBy('competition_registrations.id', 'asc');
         return $query->get();
     }
 
     public function map($registration): array
     {
-        $this->rowNumber++;
-
         $student = $registration->student;
-
-        $base = [
-            $this->rowNumber,
-            $student->name ?? '',
-            $student->last_name ?? '',
-            $student->class ?? '',
-            $student->school ?? '',
-            $student->school_address ?? '',
-            $student->statement ?? '',
-            $student->teacher ?? '',
-            $student->guardian ?? '',
-            $student->contact ?? '',
+        $mappedData = [
+            'ID Systemowe' => $registration->id,
+            'Imię ucznia' => $student->name ?? '',
+            'Nazwisko ucznia' => $student->last_name ?? '',
+            'Klasa' => (string)($student->class ?? ''),
+            'Nazwa szkoły' => $student->school ?? '',
+            'Adres szkoły' => $student->school_address ?? '',
+            'Oświadczenie' => $student->statement,
+            'Nauczyciel' => $student->teacher ?? '',
+            'Rodzic' => $student->guardian ?? '',
+            'Kontakt' => $student->contact ?? '',
         ];
 
-        $stageValues = $this->stages->map(function ($stage) use ($student) {
-            return $stage->results()->where('student_id', $student->id)->value('result') ?? '';
-        })->toArray();
-
-        return array_merge($base, $stageValues);
+        foreach ($this->stages as $stage) {
+            $headerName = "{$stage->stage} ETAP";
+            $result = '';
+            if ($student) {
+                $dbResult = $stage->results()
+                                  ->where('student_id', $student->id)
+                                  ->value('result');
+                $result = ($dbResult === null || $dbResult === '') ? '' : (string)$dbResult;
+            }
+            $mappedData[$headerName] = $result;
+        }
+        
+        $mappedData['SUMA'] = '';
+        return $mappedData;
     }
 
     public function headings(): array
     {
-        $base = [
-            'L.p.',
+        $baseHeaders = [
+            'ID Systemowe',
             'Imię ucznia',
             'Nazwisko ucznia',
             'Klasa',
@@ -74,13 +78,8 @@ class CompetitionsExport implements FromCollection, WithHeadings, WithMapping, S
             'Rodzic',
             'Kontakt',
         ];
-
         $stageHeaders = $this->stages->map(fn($stage) => "{$stage->stage} ETAP")->toArray();
-
-        $sum = [
-            'SUMA'
-        ];
-
-        return array_merge($base, $stageHeaders, $sum);
+        $sumHeader = ['SUMA'];
+        return array_merge($baseHeaders, $stageHeaders, $sumHeader);
     }
 }

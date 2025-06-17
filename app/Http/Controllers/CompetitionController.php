@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use App\Models\Competition;
 use App\Models\Stage;
 use App\Models\Student;
@@ -17,6 +18,10 @@ use App\Notifications\CoOrganizerInvitation;
 use App\Exports\CompetitionsExport;
 use App\Imports\CompetitionsImport;
 use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\HeadingRowImport;
+use Maatwebsite\Excel\Row;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Illuminate\Support\Facades\Validator;
 
 class CompetitionController extends Controller
 {
@@ -385,69 +390,246 @@ class CompetitionController extends Controller
         return redirect()->back()->with('success', 'Uczeń został usunięty.');
     }
 
-    public function exportRegistrations(Competition $competition)
-    {
-        $fileName = 'konkurs.xlsx';
-        return Excel::download(new CompetitionsExport($competition), $fileName);
-    }
-
     private function getExpectedHeaders(Competition $competition): array
     {
-        $baseHeaders = [
-            'L.p.', 'Imię ucznia', 'Nazwisko ucznia', 'Klasa', 'Nazwa szkoły',
-            'Oświadczenie', 'Nauczyciel', 'Rodzic', 'Kontakt',
-        ];
-
-        $stageHeaders = $competition->stages()->orderBy('stage')->get()->map(function ($stage) {
-            return "{$stage->stage} ETAP";
-        })->toArray();
-
+        $baseHeaders = ['ID Systemowe', 'Imię ucznia', 'Nazwisko ucznia', 'Klasa', 'Nazwa szkoły', 'Adres szkoły', 'Oświadczenie', 'Nauczyciel', 'Rodzic', 'Kontakt'];
+        $stageHeaders = $competition->stages()->orderBy('stage')->get()->map(fn($stage) => "{$stage->stage} ETAP")->toArray();
         $sumHeader = ['SUMA'];
-
         return array_merge($baseHeaders, $stageHeaders, $sumHeader);
     }
 
-    public function showImportRegistrationsForm(Competition $competition)
+    public function showImportForm(Competition $competition)
     {
-        $expectedHeaders = $this->getExpectedHeaders($competition);
-        return view('competitions.import_form', compact('competition', 'expectedHeaders'));
+        return view('competitions.import.upload_form', compact('competition'));
     }
 
-    public function importRegistrations(Request $request, Competition $competition)
+    public function handleImportUpload(Request $request, Competition $competition)
     {
-        $request->validate([
-            'excel_file' => 'required|mimes:xlsx,xls,csv',
-            'column_mappings' => 'nullable|array',
-            'column_mappings.*' => 'nullable|string',
-        ]);
-
+        $request->validate(['excel_file' => 'required|mimes:xlsx,xls,csv']);
         $file = $request->file('excel_file');
+        $path = $file->store('temp_imports', 'local');
+        $filePath = Storage::disk('local')->path($path);
 
-        $mappingsForImporter = [];
-        if ($request->has('column_mappings')) {
-            foreach ($request->input('column_mappings') as $expectedHeader => $userProvidedHeader) {
-                if (!empty(trim($userProvidedHeader))) {
-                    $mappingsForImporter[trim($userProvidedHeader)] = $expectedHeader;
+        if (!Storage::disk('local')->exists($path)) {
+            return back()->with('error', 'Nie udało się zapisać pliku na serwerze.');
+        }
+
+        $headingsInFile = (new HeadingRowImport)->toArray($filePath)[0][0] ?? [];
+        $expectedHeaders = $this->getExpectedHeaders($competition);
+
+        $normalizedFileHeadings = [];
+        foreach ($headingsInFile as $header) {
+            $normalized = Str::snake(Str::ascii(strtolower(trim($header))));
+            $normalizedFileHeadings[$normalized] = $header;
+        }
+
+        $autoMappings = [];
+        $unmatchedExpectedHeaders = [];
+        $availableHeadingsFromUserFile = $headingsInFile;
+
+        foreach ($expectedHeaders as $expected) {
+            $normalizedExpected = Str::snake(Str::ascii(strtolower(trim($expected))));
+
+            if (preg_match('/^(\d+)\s*ETAP$/i', trim($expected), $matches)) {
+                $normalizedExpected = strtolower($matches[1] . '_etap');
+            } elseif (strcasecmp(trim($expected), 'ID Systemowe') == 0) {
+                $normalizedExpected = 'id_systemowe';
+            }
+
+            if (isset($normalizedFileHeadings[$normalizedExpected])) {
+                $actualHeader = $normalizedFileHeadings[$normalizedExpected];
+                $autoMappings[$expected] = $actualHeader;
+
+                if (($key = array_search($actualHeader, $availableHeadingsFromUserFile)) !== false) {
+                    unset($availableHeadingsFromUserFile[$key]);
                 }
+            } else {
+                $unmatchedExpectedHeaders[] = $expected;
             }
         }
 
-        DB::beginTransaction();
+        session([
+            'import_file_path' => $path,
+            'import_disk_name' => 'local',
+            'import_headings_in_file' => $headingsInFile,
+            'import_unmatched_expected_headers' => $unmatchedExpectedHeaders,
+            'import_available_headings_in_file' => array_values($availableHeadingsFromUserFile),
+            'import_auto_mappings' => $autoMappings,
+        ]);
 
+        if (empty($unmatchedExpectedHeaders)) {
+            return redirect()->route('competitions.showSummary', $competition);
+        } else {
+            return redirect()->route('competitions.showMappingForm', $competition);
+        }
+    }
+
+    public function showMappingForm(Competition $competition)
+    {
+        if (!session()->has('import_file_path')) {
+            return redirect()->route('competitions.showImportForm', $competition)->with('error', 'Najpierw wgraj plik.');
+        }
+        return view('competitions.import.mapping_form', [
+            'competition' => $competition,
+            'unmatchedHeaders' => session('import_unmatched_expected_headers'),
+            'availableHeadings' => session('import_available_headings_in_file'),
+        ]);
+    }
+    
+    public function showSummary(Competition $competition)
+    {
+        if (!session()->has('import_file_path')) {
+            return redirect()->route('competitions.showImportForm', $competition)->with('error', 'Najpierw wgraj plik.');
+        }
+
+        $path = session('import_file_path');
+        $disk = session('import_disk_name', 'local');
+        $filePath = Storage::disk($disk)->path($path);
+
+        $autoMappings = session('import_auto_mappings', []);
+        $finalMappings = [];
+        foreach ($autoMappings as $expected => $actual) {
+            $finalMappings[$actual] = $expected;
+        }
+
+        $importer = new CompetitionsImport($competition, $finalMappings);
+        $rows = Excel::toCollection($importer, $filePath)[0];
+
+        $changes = [
+            'updated' => [],
+            'created' => [],
+            'no_change' => [],
+        ];
+        
+        $competitionStages = $competition->stages()->orderBy('stage')->get();
+        $expectedHeadersForDiff = $this->getExpectedHeaders($competition);
+        $expectedHeadersForDiff = array_diff($expectedHeadersForDiff, ['ID Systemowe', 'SUMA']); 
+
+        foreach ($rows as $rowIndex => $row) {
+            $excelRowData = $row->toArray();
+            $systemId = $importer->getRowValueForSummary($excelRowData, 'ID Systemowe');
+            $studentName = $importer->getRowValueForSummary($excelRowData, 'Imię ucznia');
+            $studentLastName = $importer->getRowValueForSummary($excelRowData, 'Nazwisko ucznia');
+            $displayName = trim("{$studentName} {$studentLastName}");
+
+            if (is_numeric($systemId)) {
+                $registration = CompetitionRegistration::with('student')->find((int)$systemId);
+                if ($registration && $registration->student) {
+                    $diff = [];
+                    $studentInDb = $registration->student;
+                    
+                    foreach ($expectedHeadersForDiff as $header) {
+                        $excelValue = (string)$importer->getRowValueForSummary($excelRowData, $header, '');
+                        $dbValue = '';
+
+                        if (str_contains($header, 'ETAP')) {
+                            preg_match('/(\d+)\s*ETAP/', $header, $matches);
+                            $stageNumber = $matches[1];
+                            $stage = $competitionStages->where('stage', $stageNumber)->first();
+                            if ($stage) {
+                            $stageResult = StageCompetition::where('student_id', $studentInDb->id)
+                                ->where('stage_id', $stage->id)
+                                ->where('competition_id', $competition->id) // Dodatkowe zawężenie dla pewności
+                                ->first();
+                            $dbValue = (string)($stageResult->result ?? '');
+                            }
+                        } else {
+                            $attribute = match($header) {
+                                'Imię ucznia' => 'name',
+                                'Nazwisko ucznia' => 'last_name',
+                                'Klasa' => 'class',
+                                'Nazwa szkoły' => 'school',
+                                'Adres szkoły' => 'school_address',
+                                'Nauczyciel' => 'teacher',
+                                'Rodzic' => 'guardian',
+                                'Kontakt' => 'contact',
+                                'Oświadczenie' => 'statement',
+                                default => null
+                            };
+                            if ($attribute) {
+                            if ($attribute === 'statement') {
+                                $dbValue = $studentInDb->statement ? 'true' : 'false';
+                                $excelValue = $importer->parseBoolean($importer->getRowValueForSummary($excelRowData, $header, '')) ? 'true' : 'false';
+                            } else {
+                                $dbValue = (string)($studentInDb->$attribute ?? '');
+                            }
+                            }
+                        }
+
+                        if ($excelValue !== $dbValue) {
+                            $diff[$header] = ['old' => $dbValue, 'new' => $excelValue];
+                        }
+                    }
+
+                    if (!empty($diff)) {
+                        $changes['updated'][] = ['name' => $displayName, 'id' => $systemId, 'diff' => $diff];
+                    } else {
+                        $changes['no_change'][] = ['name' => $displayName];
+                    }
+                } else {
+                    $changes['created'][] = ['name' => $displayName, 'reason' => 'Nowy wpis (ID z pliku nie znaleziono w bazie)'];
+                }
+            } else {
+                $changes['created'][] = ['name' => $displayName, 'reason' => 'Nowy wpis (brak ID w pliku)'];
+            }
+        }
+
+        return view('competitions.import.summary', [
+            'competition' => $competition,
+            'changes' => $changes,
+        ]);
+    }
+
+    public function processImport(Request $request, Competition $competition)
+    {
+        if (!session()->has('import_file_path')) {
+            return redirect()->route('competitions.showImportForm', $competition)->with('error', 'Sesja wygasła. Proszę wgrać plik ponownie.');
+        }
+        $path = session('import_file_path');
+        $disk = session('import_disk_name', 'local');
+        $filePath = Storage::disk($disk)->path($path);
+
+        // Walidacja może być uproszczona, bo sprawdzamy tylko te pola, które przyszły z formularza
+        $request->validate(['column_mappings' => 'required|array']);
+        
+        $finalMappings = [];
+        // Przetwarzamy wszystkie mapowania, które przyszły z formularza (widoczne i ukryte)
+        foreach ($request->input('column_mappings') as $expectedHeader => $userProvidedHeader) {
+            if (!empty($userProvidedHeader)) {
+                // Format dla importera: ['NagłówekWPlikuUżytkownika' => 'OczekiwanyNagłówekSystemowy']
+                $finalMappings[$userProvidedHeader] = $expectedHeader;
+            }
+        }
+        
+        DB::beginTransaction();
         try {
-            Excel::import(new CompetitionsImport($competition, $mappingsForImporter), $file);
+            Excel::import(new CompetitionsImport($competition, $finalMappings), $filePath);
             DB::commit();
-            return back()->with('success', 'Dane zostały pomyślnie zaimportowane!');
+
+            session()->forget(['import_file_path', 'import_disk_name', 'import_headings_in_file', 'import_unmatched_expected_headers', 'import_available_headings_in_file', 'import_auto_mappings']);
+            Storage::delete($path);
+            
+            return redirect()->route('competitions.show', $competition)->with('success', 'Dane zostały pomyślnie zaimportowane!');
         } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
             DB::rollBack();
-            $failures = $e->failures();
-            return back()->withErrors(['excel_file' => 'Wystąpiły błędy walidacji podczas importu.'])
-                         ->with('validation_failures', $failures);
+            return redirect()->back()->withErrors($e->errors())->with('validation_failures', $e->failures())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Błąd importu Excela dla konkursu {$competition->id}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
-            return back()->with('error', 'Wystąpił nieoczekiwany błąd podczas importu: ' . $e->getMessage());
+            Log::error("Błąd importu Excela dla konkursu {$competition->id}: " . $e->getMessage());
+            $errorMessage = $e->getMessage();
+            
+            $redirectRoute = 'competitions.showMappingForm'; // Zawsze wracaj do mapowania, jeśli jest błąd
+            
+            if (str_contains($errorMessage, "Import przerwany: Weryfikacja wstępna pliku nie powiodła się")) {
+                return redirect()->route($redirectRoute, $competition)->with('error_critical', $errorMessage);
+            }
+            return redirect()->route($redirectRoute, $competition)->with('error', 'Wystąpił nieoczekiwany błąd podczas importu: ' . $errorMessage);
         }
+    }
+    
+    public function exportRegistrations(Competition $competition)
+    {
+        return Excel::download(new CompetitionsExport($competition), 'rejestracje.xlsx');
     }
 
     public function editPoints(Competition $competition)
