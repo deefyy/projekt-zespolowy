@@ -75,29 +75,25 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
     {
         if ($rows->isEmpty()) return;
         
-        $verifiedMatchCount = 0;
+        $foundInDbCount = 0;
         $rowsToCheck = min($rows->count(), self::INITIAL_VERIFICATION_ROWS_TO_CHECK);
+
         for ($i = 0; $i < $rowsToCheck; $i++) {
             $excelRowData = $rows->get($i)->toArray();
             $systemId = $this->getRowValue($excelRowData, 'ID Systemowe');
             if (is_numeric($systemId)) {
-                $registration = CompetitionRegistration::with('student')->find((int)$systemId);
-                if ($registration && $registration->student && $registration->competition_id === $this->competition->id) {
-                    if (
-                        strtolower(trim($registration->student->name)) === strtolower(trim($this->getRowValue($excelRowData, 'Imię ucznia'))) &&
-                        strtolower(trim($registration->student->last_name)) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwisko ucznia'))) &&
-                        (string)$registration->student->class === (string)$this->getRowValue($excelRowData, 'Klasa') &&
-                        strtolower(trim($registration->student->school)) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwa szkoły')))
-                    ) {
-                        $verifiedMatchCount++;
-                    }
+                $exists = CompetitionRegistration::where('id', (int)$systemId)
+                                                ->where('competition_id', $this->competition->id)
+                                                ->exists();
+                if ($exists) {
+                    $foundInDbCount++;
                 }
             }
         }
         
         $effectiveThreshold = min(self::INITIAL_VERIFICATION_THRESHOLD, $rows->count());
-        if ($verifiedMatchCount < $effectiveThreshold) {
-            throw new Exception("Import przerwany: Weryfikacja wstępna pliku nie powiodła się. Niewystarczająca liczba pasujących wierszy (oczekiwano {$effectiveThreshold}, znaleziono {$verifiedMatchCount}). Sprawdź, czy wgrałeś prawidłowy plik i czy mapowania kolumn są poprawne.");
+        if ($foundInDbCount < $effectiveThreshold) {
+            throw new Exception("Import przerwany: Weryfikacja wstępna pliku nie powiodła się. Niewystarczająca liczba pasujących ID (oczekiwano {$effectiveThreshold}, znaleziono {$foundInDbCount}). Sprawdź, czy wgrałeś prawidłowy plik.");
         }
 
         foreach ($rows as $rowIndex => $row) {
@@ -114,35 +110,23 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
             }
 
             if ($registrationToUpdate && $registrationToUpdate->student) {
-                $isVerifiedThisRow = strtolower(trim($registrationToUpdate->student->name)) === strtolower(trim($this->getRowValue($excelRowData, 'Imię ucznia'))) &&
-                                     strtolower(trim($registrationToUpdate->student->last_name)) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwisko ucznia'))) &&
-                                     (string)$registrationToUpdate->student->class === (string)$this->getRowValue($excelRowData, 'Klasa') &&
-                                     strtolower(trim($registrationToUpdate->student->school)) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwa szkoły')));
-
-                if ($isVerifiedThisRow) {
-                    $studentDataToUpdate = [
-                        'name'           => $this->getRowValue($excelRowData, 'Imię ucznia', $registrationToUpdate->student->name),
-                        'last_name'      => $this->getRowValue($excelRowData, 'Nazwisko ucznia', $registrationToUpdate->student->last_name),
-                        'class'          => (string)$this->getRowValue($excelRowData, 'Klasa', $registrationToUpdate->student->class),
-                        'school'         => $this->getRowValue($excelRowData, 'Nazwa szkoły', $registrationToUpdate->student->school),
-                        'school_address' => $this->getRowValue($excelRowData, 'Adres szkoły', $registrationToUpdate->student->school_address),
-                        'teacher'        => $this->getRowValue($excelRowData, 'Nauczyciel', $registrationToUpdate->student->teacher),
-                        'guardian'       => $this->getRowValue($excelRowData, 'Rodzic', $registrationToUpdate->student->guardian),
-                        'contact'        => $this->getRowValue($excelRowData, 'Kontakt', $registrationToUpdate->student->contact),
-                        'statement'      => $this->parseBoolean($this->getRowValue($excelRowData, 'Oświadczenie', $registrationToUpdate->student->statement)),
-                    ];
-                    $registrationToUpdate->student->update($studentDataToUpdate);
-                    $student = $registrationToUpdate->student;
-                } else {
-                    Log::warning("Pominięto aktualizację wiersza #".($rowIndex+1)." z ID {$systemId}: Dane weryfikacyjne nie pasują do rekordu w bazie. Potencjalna manipulacja.");
-                    continue;
-                }
+                $studentDataToUpdate = [
+                    'name'           => $this->getRowValue($excelRowData, 'Imię ucznia', $registrationToUpdate->student->name),
+                    'last_name'      => $this->getRowValue($excelRowData, 'Nazwisko ucznia', $registrationToUpdate->student->last_name),
+                    'class'          => (string)$this->getRowValue($excelRowData, 'Klasa', $registrationToUpdate->student->class),
+                    'school'         => $this->getRowValue($excelRowData, 'Nazwa szkoły', $registrationToUpdate->student->school),
+                    'school_address' => $this->getRowValue($excelRowData, 'Adres szkoły', $registrationToUpdate->student->school_address),
+                    'teacher'        => $this->getRowValue($excelRowData, 'Nauczyciel', $registrationToUpdate->student->teacher),
+                    'guardian'       => $this->getRowValue($excelRowData, 'Rodzic', $registrationToUpdate->student->guardian),
+                    'contact'        => $this->getRowValue($excelRowData, 'Kontakt', $registrationToUpdate->student->contact),
+                    'statement'      => $this->parseBoolean($this->getRowValue($excelRowData, 'Oświadczenie', $registrationToUpdate->student->statement)),
+                ];
+                $registrationToUpdate->student->update($studentDataToUpdate);
+                $student = $registrationToUpdate->student;
             } else {
                 $studentName = $this->getRowValue($excelRowData, 'Imię ucznia');
                 $studentLastName = $this->getRowValue($excelRowData, 'Nazwisko ucznia');
-                if (empty($studentName) || empty($studentLastName)) {
-                    continue;
-                }
+                if (empty($studentName) || empty($studentLastName)) continue;
                 $student = Student::create([
                     'name'           => $studentName,
                     'last_name'      => $studentLastName,
@@ -196,13 +180,7 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
 
     public function rules(): array
     {
-        $rules = [
-            'id_systemowe'       => ['nullable', 'integer', 'min:1'],
-            'imie_ucznia'        => ['required_without:*.id_systemowe', 'nullable', 'string', 'max:255'],
-            'nazwisko_ucznia'    => ['required_without:*.id_systemowe', 'nullable', 'string', 'max:255'],
-            'klasa'              => ['nullable', 'string', 'max:255'],
-            'nazwa_szkoly'       => ['nullable', 'string', 'max:255'],
-        ];
+        $rules = ['id_systemowe' => ['nullable', 'integer', 'min:1'], 'imie_ucznia' => ['required_without:*.id_systemowe', 'nullable', 'string', 'max:255'], 'nazwisko_ucznia' => ['required_without:*.id_systemowe', 'nullable', 'string', 'max:255'], 'klasa' => ['nullable', 'string', 'max:255'], 'nazwa_szkoly' => ['nullable', 'string', 'max:255']];
         if ($this->stages) {
             foreach ($this->stages as $stage) {
                 $stageMaatwebsiteKey = strtolower($stage->stage . '_etap');

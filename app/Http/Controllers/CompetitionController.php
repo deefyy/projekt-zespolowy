@@ -187,7 +187,13 @@ class CompetitionController extends Controller
         // Aktualizacja danych konkursu
         $competition->update($validated);
 
-        // 🔍 **Pobranie aktualnej liczby etapów**
+        $competition->update($validated);
+
+            $competition->forum->update([
+                'topic'       => $competition->name,
+                'description' => $competition->description,
+            ]);
+
         $currentStages  = $competition->stages()->count();
         $newStagesCount = $validated['stages_count'];
 
@@ -390,6 +396,17 @@ class CompetitionController extends Controller
         return redirect()->back()->with('success', 'Uczeń został usunięty.');
     }
 
+        private function normalizeHeader(string $header): string
+    {
+        $header = trim($header);
+        if (preg_match('/^(\d+)\s*ETAP$/i', $header, $matches)) {
+            return strtolower($matches[1] . '_etap');
+        } elseif (strcasecmp($header, 'ID Systemowe') == 0) {
+            return 'id_systemowe';
+        }
+        return Str::snake(Str::ascii(strtolower($header)));
+    }
+
     private function getExpectedHeaders(Competition $competition): array
     {
         $baseHeaders = ['ID Systemowe', 'Imię ucznia', 'Nazwisko ucznia', 'Klasa', 'Nazwa szkoły', 'Adres szkoły', 'Oświadczenie', 'Nauczyciel', 'Rodzic', 'Kontakt'];
@@ -416,11 +433,10 @@ class CompetitionController extends Controller
 
         $headingsInFile = (new HeadingRowImport)->toArray($filePath)[0][0] ?? [];
         $expectedHeaders = $this->getExpectedHeaders($competition);
-
-        $normalizedFileHeadings = [];
+        
+        $normalizedFileHeadingsMap = [];
         foreach ($headingsInFile as $header) {
-            $normalized = Str::snake(Str::ascii(strtolower(trim($header))));
-            $normalizedFileHeadings[$normalized] = $header;
+            $normalizedFileHeadingsMap[$this->normalizeHeader($header)] = $header;
         }
 
         $autoMappings = [];
@@ -428,18 +444,11 @@ class CompetitionController extends Controller
         $availableHeadingsFromUserFile = $headingsInFile;
 
         foreach ($expectedHeaders as $expected) {
-            $normalizedExpected = Str::snake(Str::ascii(strtolower(trim($expected))));
+            $normalizedExpected = $this->normalizeHeader($expected);
 
-            if (preg_match('/^(\d+)\s*ETAP$/i', trim($expected), $matches)) {
-                $normalizedExpected = strtolower($matches[1] . '_etap');
-            } elseif (strcasecmp(trim($expected), 'ID Systemowe') == 0) {
-                $normalizedExpected = 'id_systemowe';
-            }
-
-            if (isset($normalizedFileHeadings[$normalizedExpected])) {
-                $actualHeader = $normalizedFileHeadings[$normalizedExpected];
+            if (isset($normalizedFileHeadingsMap[$normalizedExpected])) {
+                $actualHeader = $normalizedFileHeadingsMap[$normalizedExpected];
                 $autoMappings[$expected] = $actualHeader;
-
                 if (($key = array_search($actualHeader, $availableHeadingsFromUserFile)) !== false) {
                     unset($availableHeadingsFromUserFile[$key]);
                 }
@@ -447,7 +456,7 @@ class CompetitionController extends Controller
                 $unmatchedExpectedHeaders[] = $expected;
             }
         }
-
+        
         session([
             'import_file_path' => $path,
             'import_disk_name' => 'local',
@@ -475,24 +484,17 @@ class CompetitionController extends Controller
             'availableHeadings' => session('import_available_headings_in_file'),
         ]);
     }
-
+    
     public function handleMapping(Request $request, Competition $competition)
     {
         if (!session()->has('import_file_path')) {
             return redirect()->route('competitions.showImportForm', $competition)->with('error', 'Sesja wygasła. Proszę wgrać plik ponownie.');
         }
-
         $request->validate(['column_mappings' => 'required|array']);
-        
         $autoMappings = session('import_auto_mappings', []);
         $manualMappings = $request->input('column_mappings', []);
-        
-        // Połącz mapowania - ręczne nadpisują/dodają do automatycznych
         $finalMappings = array_merge($autoMappings, $manualMappings);
-
-        // Zapisz kompletną mapę w sesji
         session(['import_final_mappings' => $finalMappings]);
-
         return redirect()->route('competitions.showSummary', $competition);
     }
     
@@ -530,7 +532,9 @@ class CompetitionController extends Controller
 
             if (is_numeric($systemId)) {
                 $registration = CompetitionRegistration::with('student')->find((int)$systemId);
-                if ($registration && $registration->student) {
+                // --- POCZĄTEK POPRAWKI ---
+                if ($registration && $registration->student && $registration->competition_id === $competition->id) {
+                // --- KONIEC POPRAWKI ---
                     $diff = [];
                     $studentInDb = $registration->student;
                     foreach ($expectedHeadersForDiff as $header) {
@@ -589,53 +593,37 @@ class CompetitionController extends Controller
         $disk = session('import_disk_name', 'local');
         $filePath = Storage::disk($disk)->path($path);
 
-        if (!Storage::disk($disk)->exists($path)) {
-            return redirect()->route('competitions.showImportForm', $competition)->with('error', 'Plik importu wygasł lub został usunięty. Proszę wgrać go ponownie.');
+        $finalMappingsFromSession = session('import_final_mappings', []);
+        $manualMappings = $request->input('column_mappings', []);
+        $finalMappings = array_merge($finalMappingsFromSession, $manualMappings);
+
+        if (empty($finalMappings)) {
+            $finalMappings = session('import_auto_mappings', []);
         }
 
-        $autoMappings = session('import_auto_mappings', []);
-        $manualMappings = session('import_final_mappings', []); // `handleMapping` zapisuje tu wynik
-        
-        // Połącz mapowania. Jeśli użytkownik przeszedł przez `handleMapping`, `import_final_mappings` będzie miało wszystko.
-        // Jeśli przeszedł prosto do podsumowania, użyjemy `import_auto_mappings`.
-        $finalExpectedToActualMap = !empty($manualMappings) ? $manualMappings : $autoMappings;
-        
-        // Konwertuj do formatu oczekiwanego przez importer:
-        // ['NagłówekWPlikuUżytkownika' => 'OczekiwanyNagłówekSystemowy']
         $mappingsForImporter = [];
-        foreach ($finalExpectedToActualMap as $expectedHeader => $userProvidedHeader) {
+        foreach ($finalMappings as $expectedHeader => $userProvidedHeader) {
             if (!empty($userProvidedHeader)) {
                 $mappingsForImporter[$userProvidedHeader] = $expectedHeader;
             }
         }
         
-        // Sprawdzenie, czy mapa nie jest pusta, co mogłoby się zdarzyć przy błędzie sesji
         if (empty($mappingsForImporter)) {
-            Log::error("Próba importu z pustą mapą kolumn dla konkursu {$competition->id}.");
-            return redirect()->route('competitions.showImportForm', $competition)->with('error', 'Wystąpił błąd sesji. Spróbuj ponownie.');
+            return redirect()->route('competitions.showImportForm', $competition)->with('error', 'Wystąpił błąd sesji lub nie zmapowano żadnych kolumn. Spróbuj ponownie.');
         }
 
-        // Krok 3: Uruchom import
         DB::beginTransaction();
         try {
             Excel::import(new CompetitionsImport($competition, $mappingsForImporter), $filePath);
             DB::commit();
-
-            // Krok 4: Wyczyść wszystko
             session()->forget(['import_file_path', 'import_disk_name', 'import_headings_in_file', 'import_unmatched_expected_headers', 'import_available_headings_in_file', 'import_auto_mappings', 'import_final_mappings']);
-            Storage::disk($disk)->delete($path);
-            
+            Storage::delete($path);
             return redirect()->route('competitions.show', $competition)->with('success', 'Dane zostały pomyślnie zaimportowane!');
-        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
-            DB::rollBack();
-            return redirect()->back()->withErrors($e->errors())->with('validation_failures', $e->failures())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Błąd importu Excela dla konkursu {$competition->id}: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            
             $errorMessage = $e->getMessage();
             $redirectRoute = 'competitions.showMappingForm'; 
-            
             if (str_contains($errorMessage, "Import przerwany: Weryfikacja wstępna pliku nie powiodła się")) {
                 return redirect()->route($redirectRoute, $competition)->with('error_critical', $errorMessage);
             }
