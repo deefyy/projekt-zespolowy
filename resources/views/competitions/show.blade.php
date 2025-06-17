@@ -118,7 +118,7 @@
              class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">
             Eksportuj do Excela
           </a>
-          <a href="{{ route('competitions.showImportRegistrationsForm', $competition) }}"
+          <a href="{{ route('competitions.showImportForm', $competition) }}"
              class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">
             Importuj z Excela
           </a>

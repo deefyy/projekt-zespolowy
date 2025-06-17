@@ -34,18 +34,15 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
 
     private function getRowValue(array $excelRowData, string $systemStandardHeaderName, $default = null)
     {
-        $headerActuallyInUserExcelFile = $systemStandardHeaderName;
-        if (!empty($this->columnMappings)) {
-            $foundUserHeader = array_search($systemStandardHeaderName, $this->columnMappings, true);
-            if ($foundUserHeader !== false) {
-                $headerActuallyInUserExcelFile = $foundUserHeader;
-            }
+        $headerInUserFile = array_search($systemStandardHeaderName, $this->columnMappings);
+        if ($headerInUserFile === false) {
+            $headerInUserFile = $systemStandardHeaderName;
         }
-        $maatwebsiteKey = Str::snake(Str::ascii(strtolower(trim($headerActuallyInUserExcelFile))));
+        $maatwebsiteKey = Str::snake(Str::ascii(strtolower(trim($headerInUserFile))));
         
-        if (preg_match('/^(\d+)\s*ETAP$/i', trim($headerActuallyInUserExcelFile), $matches)) {
-             $maatwebsiteKey = strtolower($matches[1] . '_etap');
-        } elseif (strcasecmp(trim($headerActuallyInUserExcelFile), 'ID Systemowe') == 0) {
+        if (preg_match('/^(\d+)\s*ETAP$/i', trim($headerInUserFile), $matches)) {
+            $maatwebsiteKey = strtolower($matches[1] . '_etap');
+        } elseif (strcasecmp(trim($headerInUserFile), 'ID Systemowe') == 0) {
             $maatwebsiteKey = 'id_systemowe';
         }
         
@@ -61,15 +58,8 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
         foreach($this->stages as $stage) {
             $headersToConvert[] = "{$stage->stage} ETAP";
         }
-
         foreach ($headersToConvert as $headerName) {
-            $headerInFile = $headerName;
-            if (!empty($this->columnMappings)) {
-                $userProvidedHeader = array_search($headerName, $this->columnMappings, true);
-                if ($userProvidedHeader !== false) {
-                    $headerInFile = $userProvidedHeader;
-                }
-            }
+            $headerInFile = array_search($headerName, $this->columnMappings) ?: $headerName;
             $normalizedKey = Str::snake(Str::ascii(strtolower(trim($headerInFile))));
             if (preg_match('/^(\d+)\s*ETAP$/i', trim($headerInFile), $matches)) {
                 $normalizedKey = strtolower($matches[1] . '_etap');
@@ -84,7 +74,7 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
     public function collection(IlluminateCollection $rows)
     {
         if ($rows->isEmpty()) return;
-
+        
         $verifiedMatchCount = 0;
         $rowsToCheck = min($rows->count(), self::INITIAL_VERIFICATION_ROWS_TO_CHECK);
         for ($i = 0; $i < $rowsToCheck; $i++) {
@@ -92,12 +82,12 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
             $systemId = $this->getRowValue($excelRowData, 'ID Systemowe');
             if (is_numeric($systemId)) {
                 $registration = CompetitionRegistration::with('student')->find((int)$systemId);
-                if ($registration && $registration->student) {
+                if ($registration && $registration->student && $registration->competition_id === $this->competition->id) {
                     if (
-                        strtolower(trim($registration->student->name ?? '')) === strtolower(trim($this->getRowValue($excelRowData, 'Imię ucznia') ?? '')) &&
-                        strtolower(trim($registration->student->last_name ?? '')) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwisko ucznia') ?? '')) &&
-                        (string)($registration->student->class ?? '') === (string)($this->getRowValue($excelRowData, 'Klasa') ?? '') &&
-                        strtolower(trim($registration->student->school ?? '')) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwa szkoły') ?? ''))
+                        strtolower(trim($registration->student->name)) === strtolower(trim($this->getRowValue($excelRowData, 'Imię ucznia'))) &&
+                        strtolower(trim($registration->student->last_name)) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwisko ucznia'))) &&
+                        (string)$registration->student->class === (string)$this->getRowValue($excelRowData, 'Klasa') &&
+                        strtolower(trim($registration->student->school)) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwa szkoły')))
                     ) {
                         $verifiedMatchCount++;
                     }
@@ -107,37 +97,52 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
         
         $effectiveThreshold = min(self::INITIAL_VERIFICATION_THRESHOLD, $rows->count());
         if ($verifiedMatchCount < $effectiveThreshold) {
-            throw new Exception("Import przerwany: Weryfikacja wstępna pliku nie powiodła się. Niewystarczająca liczba pasujących wierszy (oczekiwano {$effectiveThreshold}, znaleziono {$verifiedMatchCount}).");
+            throw new Exception("Import przerwany: Weryfikacja wstępna pliku nie powiodła się. Niewystarczająca liczba pasujących wierszy (oczekiwano {$effectiveThreshold}, znaleziono {$verifiedMatchCount}). Sprawdź, czy wgrałeś prawidłowy plik i czy mapowania kolumn są poprawne.");
         }
 
         foreach ($rows as $rowIndex => $row) {
             $excelRowData = $row->toArray();
             $systemId = $this->getRowValue($excelRowData, 'ID Systemowe');
+            $student = null;
             $registrationToUpdate = null;
-
+            
             if (is_numeric($systemId)) {
-                $registrationToUpdate = CompetitionRegistration::with('student')->find((int)$systemId);
+                $registrationToUpdate = CompetitionRegistration::with('student')
+                    ->where('id', (int)$systemId)
+                    ->where('competition_id', $this->competition->id)
+                    ->first();
             }
 
             if ($registrationToUpdate && $registrationToUpdate->student) {
-                $studentDataToUpdate = [
-                    'name'           => $this->getRowValue($excelRowData, 'Imię ucznia', $registrationToUpdate->student->name),
-                    'last_name'      => $this->getRowValue($excelRowData, 'Nazwisko ucznia', $registrationToUpdate->student->last_name),
-                    'class'          => (string)$this->getRowValue($excelRowData, 'Klasa', $registrationToUpdate->student->class),
-                    'school'         => $this->getRowValue($excelRowData, 'Nazwa szkoły', $registrationToUpdate->student->school),
-                    'school_address' => $this->getRowValue($excelRowData, 'Adres szkoły', $registrationToUpdate->student->school_address),
-                    'teacher'        => $this->getRowValue($excelRowData, 'Nauczyciel', $registrationToUpdate->student->teacher),
-                    'guardian'       => $this->getRowValue($excelRowData, 'Rodzic', $registrationToUpdate->student->guardian),
-                    'contact'        => $this->getRowValue($excelRowData, 'Kontakt', $registrationToUpdate->student->contact),
-                    'statement'      => $this->parseBoolean($this->getRowValue($excelRowData, 'Oświadczenie', $registrationToUpdate->student->statement)),
-                ];
-                $registrationToUpdate->student->update($studentDataToUpdate);
-                $student = $registrationToUpdate->student;
+                $isVerifiedThisRow = strtolower(trim($registrationToUpdate->student->name)) === strtolower(trim($this->getRowValue($excelRowData, 'Imię ucznia'))) &&
+                                     strtolower(trim($registrationToUpdate->student->last_name)) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwisko ucznia'))) &&
+                                     (string)$registrationToUpdate->student->class === (string)$this->getRowValue($excelRowData, 'Klasa') &&
+                                     strtolower(trim($registrationToUpdate->student->school)) === strtolower(trim($this->getRowValue($excelRowData, 'Nazwa szkoły')));
+
+                if ($isVerifiedThisRow) {
+                    $studentDataToUpdate = [
+                        'name'           => $this->getRowValue($excelRowData, 'Imię ucznia', $registrationToUpdate->student->name),
+                        'last_name'      => $this->getRowValue($excelRowData, 'Nazwisko ucznia', $registrationToUpdate->student->last_name),
+                        'class'          => (string)$this->getRowValue($excelRowData, 'Klasa', $registrationToUpdate->student->class),
+                        'school'         => $this->getRowValue($excelRowData, 'Nazwa szkoły', $registrationToUpdate->student->school),
+                        'school_address' => $this->getRowValue($excelRowData, 'Adres szkoły', $registrationToUpdate->student->school_address),
+                        'teacher'        => $this->getRowValue($excelRowData, 'Nauczyciel', $registrationToUpdate->student->teacher),
+                        'guardian'       => $this->getRowValue($excelRowData, 'Rodzic', $registrationToUpdate->student->guardian),
+                        'contact'        => $this->getRowValue($excelRowData, 'Kontakt', $registrationToUpdate->student->contact),
+                        'statement'      => $this->parseBoolean($this->getRowValue($excelRowData, 'Oświadczenie', $registrationToUpdate->student->statement)),
+                    ];
+                    $registrationToUpdate->student->update($studentDataToUpdate);
+                    $student = $registrationToUpdate->student;
+                } else {
+                    Log::warning("Pominięto aktualizację wiersza #".($rowIndex+1)." z ID {$systemId}: Dane weryfikacyjne nie pasują do rekordu w bazie. Potencjalna manipulacja.");
+                    continue;
+                }
             } else {
                 $studentName = $this->getRowValue($excelRowData, 'Imię ucznia');
                 $studentLastName = $this->getRowValue($excelRowData, 'Nazwisko ucznia');
-                if (empty($studentName) || empty($studentLastName)) continue;
-
+                if (empty($studentName) || empty($studentLastName)) {
+                    continue;
+                }
                 $student = Student::create([
                     'name'           => $studentName,
                     'last_name'      => $studentLastName,
@@ -177,7 +182,7 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
         }
     }
 
-    private function parseBoolean($value): bool
+    public function parseBoolean($value): bool
     {
         if (is_bool($value)) return $value;
         if ($value === null || $value === '') return false;
@@ -193,15 +198,10 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
     {
         $rules = [
             'id_systemowe'       => ['nullable', 'integer', 'min:1'],
-            'imie_ucznia'        => ['nullable', 'string', 'max:255'],
-            'nazwisko_ucznia'    => ['nullable', 'string', 'max:255'],
+            'imie_ucznia'        => ['required_without:*.id_systemowe', 'nullable', 'string', 'max:255'],
+            'nazwisko_ucznia'    => ['required_without:*.id_systemowe', 'nullable', 'string', 'max:255'],
             'klasa'              => ['nullable', 'string', 'max:255'],
             'nazwa_szkoly'       => ['nullable', 'string', 'max:255'],
-            'adres_szkoly'       => ['nullable', 'string', 'max:1000'],
-            'oswiadczenie'       => ['nullable'],
-            'nauczyciel'         => ['nullable', 'string', 'max:255'],
-            'rodzic'             => ['nullable', 'string', 'max:255'],
-            'kontakt'            => ['nullable', 'string', 'max:255'],
         ];
         if ($this->stages) {
             foreach ($this->stages as $stage) {
@@ -210,5 +210,23 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
             }
         }
         return $rules;
+    }
+
+    public function getRowValueForSummary(array $excelRowData, string $systemStandardHeaderName, $default = null)
+    {
+        $headerInUserFile = array_search($systemStandardHeaderName, $this->columnMappings);
+        if ($headerInUserFile === false) {
+            $headerInUserFile = $systemStandardHeaderName;
+        }
+        $maatwebsiteKey = Str::snake(Str::ascii(strtolower(trim($headerInUserFile))));
+        if (preg_match('/^(\d+)\s*ETAP$/i', trim($headerInUserFile), $matches)) {
+            $maatwebsiteKey = strtolower($matches[1] . '_etap');
+        } elseif (strcasecmp(trim($headerInUserFile), 'ID Systemowe') == 0) {
+            $maatwebsiteKey = 'id_systemowe';
+        }
+        if (array_key_exists($maatwebsiteKey, $excelRowData)) {
+            return $excelRowData[$maatwebsiteKey];
+        }
+        return $default;
     }
 }
