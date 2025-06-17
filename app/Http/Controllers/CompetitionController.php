@@ -20,35 +20,81 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CompetitionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $competitions = Competition::all();
-        return view('competitions.index', compact('competitions'));
+        $search = $request->input('search');
+
+        $competitions = Competition::when($search, function ($query, $search) {
+            $query->where('name', 'like', "%{$search}%")
+                ->orWhere('description', 'like', "%{$search}%");
+        })->get();
+
+        return view('competitions.index', compact('competitions', 'search'));
     }
 
     public function show(Request $request, Competition $competition)
     {
         $perPage = $request->integer('perPage', 10);
+    $search = $request->input('search');
+    $sort = $request->input('sort', 'created_at');
+    $direction = $request->input('direction', 'asc');
 
-        $userRegistrations = collect();
-        $competition->load('stages');
-        if (auth()->check()) {
-            if (auth()->user()->role === 'admin' || auth()->user()->role === 'organizator') {
-                $userRegistrations = $competition->registrations()
-                ->with('student')
-                ->paginate($perPage)
-                ->withQueryString();
-            } else {
-                $userRegistrations = $competition->registrations()
-                    ->where('user_id', auth()->id())
-                    ->with(['student.stageCompetitions'])
-                    ->paginate($perPage)
-                    ->withQueryString();
-                    
-            }
+    $allowedSorts = ['created_at', 'student_id', 'student.class'];
+
+    if (!in_array($sort, $allowedSorts)) {
+        $sort = 'created_at';
+    }
+
+    $userRegistrations = collect();
+    $competition->load('stages');
+
+    if (auth()->check()) {
+        $query = $competition->registrations()->with('student');
+
+        // Admin i organizator
+        if (auth()->user()->role === 'admin' || auth()->user()->role === 'organizator') {
+            $query
+                ->when($search, function ($q) use ($search) {
+                    $q->whereHas('student', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('class', 'like', "%{$search}%")
+                            ->orWhere('school', 'like', "%{$search}%");
+                    });
+                });
+                if ($sort === 'student.class') {
+                    $query->join('students', 'competition_registrations.student_id', '=', 'students.id')
+                        ->orderByRaw("CAST(SUBSTRING_INDEX(students.class, ',', 1) AS UNSIGNED) {$direction}")
+                        ->select('competition_registrations.*');
+                } else {
+                    $query->orderBy($sort, $direction);
+                }
+
+            $userRegistrations = $query->paginate($perPage)->withQueryString();
+            // User
+        } else {
+            $query->where('user_id', auth()->id())
+                ->when($search, function ($q) use ($search) {
+                    $q->whereHas('student', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('class', 'like', "%{$search}%")
+                            ->orWhere('school', 'like', "%{$search}%");
+                    });
+                });
+                if ($sort === 'student.class') {
+                    $query->join('students', 'competition_registrations.student_id', '=', 'students.id')
+                            ->orderByRaw("CAST(SUBSTRING_INDEX(students.class, ',', 1) AS UNSIGNED) {$direction}")
+                            ->select('competition_registrations.*');
+                    } else {
+                        $query->orderBy($sort, $direction);
+                    }
+
+            $userRegistrations = $query->paginate($perPage)->withQueryString();
         }
+    }
 
-        return view('competitions.show', compact('competition', 'userRegistrations'));
+    return view('competitions.show', compact('competition', 'userRegistrations'));
     }
 
     public function create()
@@ -210,22 +256,6 @@ class CompetitionController extends Controller
     }
     public function showRegistrationForm(Competition $competition)
     {
-        $user = auth()->user();
-        $role = $user?->role ?? 'guest';
-
-        $isAdmin  = $role === 'admin';
-        $isOwner  = $user && $competition->user_id === $user->id;
-        $isCoOrg  = $user && $competition->coOrganizers()
-                                        ->where('user_id', $user->id)
-                                        ->exists();
-
-        $deadlinePassed = now()->greaterThan($competition->registration_deadline);
-
-
-        if ($deadlinePassed && ! ($isAdmin || $isOwner || $isCoOrg)) {
-            return back()->with('error', 'Termin rejestracji minął!');
-        }
-
         $classes = $this->schoolClasses();
         return view('competitions.register', compact('competition','classes'));
     }

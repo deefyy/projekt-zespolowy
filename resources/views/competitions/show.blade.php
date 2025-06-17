@@ -1,3 +1,30 @@
+@php
+    $currentSort = request('sort');
+    $currentDirection = request('direction') ?? 'asc';
+
+    function sortIcon($column) {
+        $sort = request('sort');
+        $direction = request('direction', 'asc');
+
+        if ($sort === $column) {
+            return $direction === 'asc' ? '▲' : '▼';
+        }
+        return '↕';
+    }
+
+    function sortLink($column, $label) {
+        $currentSort = request('sort');
+        $currentDirection = request('direction') ?? 'asc';
+        $nextDirection = ($currentSort === $column && $currentDirection === 'asc') ? 'desc' : 'asc';
+        $search = request('search');
+        $perPage = request('perPage', 10);
+
+        $url = url()->current() . "?sort={$column}&direction={$nextDirection}&search={$search}&perPage={$perPage}";
+
+        return "<a href=\"{$url}\" class=\"hover:underline\">{$label} <span class=\"sort-icon\">" . sortIcon($column) . "</span></a>";
+    }
+@endphp
+
 <x-app-layout>
   <x-slot name="header">
     <h2 class="font-semibold text-xl text-gray-800 leading-tight">Szczegóły konkursu</h2>
@@ -132,14 +159,33 @@
                   <div class="mt-8">
                       <h3 class="text-lg font-semibold mb-4">Twoi zapisani uczniowie:</h3>
 
+                      <form method="GET" class="mb-4 flex flex-wrap gap-4 items-end">
+    @foreach (request()->except('search', 'page') as $key => $value)
+        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+    @endforeach
+
+    <div>
+        <label for="search" class="block text-sm font-medium text-gray-700">Szukaj ucznia</label>
+        <input type="text" name="search" id="search" value="{{ request('search') }}"
+               class="border-gray-300 rounded w-48" placeholder="Imię, nazwisko, klasa, szkoła..." />
+    </div>
+
+    <div>
+        <button type="submit"
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-5">
+            Szukaj
+        </button>
+    </div>
+</form>
+
                       <div class="overflow-x-auto">
                           <table class="min-w-full bg-white border border-gray-200 rounded">
                               <thead class="bg-gray-100">
                                   <tr>
-                                      <th class="text-left px-4 py-2 border-b">Imię</th>
-                                      <th class="text-left px-4 py-2 border-b">Nazwisko</th>
-                                      <th class="text-left px-4 py-2 border-b">Klasa</th>
-                                      <th class="text-left px-4 py-2 border-b">Szkoła</th>
+                                      <th class="text-left px-4 py-2 border-b">{!! sortLink('student.name', 'Imię') !!}</th>
+                                      <th class="text-left px-4 py-2 border-b">{!! sortLink('student.last_name', 'Nazwisko') !!}</th>
+                                      <th class="text-left px-4 py-2 border-b">{!! sortLink('student.class', 'Klasa') !!}</th>
+                                      <th class="text-left px-4 py-2 border-b">{!! sortLink('student.school', 'Szkoła') !!}</th>
 
                                       {{-- dynamiczne kolumny etapów --}}
                                       @foreach($competition->stages as $stage)

@@ -8,6 +8,18 @@
     <div class="py-10">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
 
+            <form method="GET" action="{{ route('competitions.index') }}" class="mb-6 flex flex-wrap gap-4 items-center">
+                <input type="text" name="search"
+                    value="{{ request('search') }}"
+                    placeholder="Szukaj konkursu..."
+                    class="border border-gray-300 rounded px-4 py-2 w-full sm:w-80">
+
+                <button type="submit"
+                        class="bg-[#002d62] text-white px-4 py-2 rounded hover:bg-[#001b3e] transition">
+                    🔍 Szukaj
+                </button>
+            </form>
+
             {{-- przycisk „Dodaj nowy” – tylko admin / organizator --}}
             @auth
                 @if(auth()->user()->role === 'admin' || auth()->user()->role === 'organizator')
