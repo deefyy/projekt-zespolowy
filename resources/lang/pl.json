@@ -225,5 +225,9 @@
     "Import Submissions (Step 1/2): Upload File": "Import Zgłoszeń (Krok 1/2): Wgraj Plik",
     "Select an Excel file to import. In the next step, the system will analyze the column headers and allow you to match them.": "Wybierz plik Excel do zaimportowania. W następnym kroku system przeanalizuje nagłówki kolumn i pozwoli Ci je dopasować.",
     "Excel file (.xlsx, .xls, .csv):": "Plik Excel (.xlsx, .xls, .csv):",
-    "Proceed to file analysis": "Przejdź do analizy pliku"
+    "Proceed to file analysis": "Przejdź do analizy pliku",
+    "No user found with that email.": "Nie znaleziono użytkownika o tym adresie e-mail.",
+    "User must have the “organizator” role.": "Użytkownik musi posiadać rolę „organizator”.",
+    "User is already a co-organizer.": "Użytkownik jest już współorganizatorem.",
+    "Co-organizer added and notified.": "Współorganizator został dodany i powiadomiony."
 }

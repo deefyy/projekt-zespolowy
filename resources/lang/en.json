@@ -225,5 +225,9 @@
     "Import Submissions (Step 1/2): Upload File": "Import Submissions (Step 1/2): Upload File",
     "Select an Excel file to import. In the next step, the system will analyze the column headers and allow you to match them.": "Select an Excel file to import. In the next step, the system will analyze the column headers and allow you to match them.",
     "Excel file (.xlsx, .xls, .csv):": "Excel file (.xlsx, .xls, .csv):",
-    "Proceed to file analysis": "Proceed to file analysis"
+    "Proceed to file analysis": "Proceed to file analysis",
+    "No user found with that email.": "No user found with that email.",
+    "User must have the “organizator” role.": "User must have the “organizator” role.",
+    "User is already a co-organizer.": "User is already a co-organizer.",
+    "Co-organizer added and notified.": "Co-organizer added and notified."
 }

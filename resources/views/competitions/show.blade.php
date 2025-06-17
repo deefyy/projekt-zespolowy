@@ -114,15 +114,32 @@
     <a href="{{ route('competitions.showImportForm', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">Importuj z Excela</a>
     <a href="{{ route('competitions.points.edit', $competition) }}" class="block bg-indigo-600 text-white text-center py-2 px-3 rounded hover:bg-indigo-700">Zarządzaj punktami</a>
 
+        @if($errors->any())
+            <div class="mt-4 p-4 bg-red-100 text-red-800 rounded">
+                <ul class="list-disc pl-5 space-y-1">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @if(session('status'))
+            <div class="mt-4 p-4 bg-green-100 text-green-800 rounded">
+                {{ session('status') }}
+            </div>
+        @endif
+
+
     @if(!$isCoOrganizer)
-    <form action="{{ route('competitions.inviteCoorganizer', $competition) }}" method="POST" class="mt-4">
-        @csrf
-        <input type="email" name="email" required placeholder="{{ __('Co-organizer email') }}" class="form-input border border-gray-300 rounded px-3 py-2 w-full mb-2" />
-        <button type="submit" class="w-full bg-[#002d62] text-white py-2 rounded hover:bg-[#001b3c]">{{ __('Add co-organizer') }}</button>
-    </form>
-    @endif
-</div>
-@endif
+      <form action="{{ route('competitions.inviteCoorganizer', $competition) }}" method="POST" class="mt-4">
+          @csrf
+          <input type="email" name="email" required placeholder="{{ __('Co-organizer email') }}" class="form-input border border-gray-300 rounded px-3 py-2 w-full mb-2" />
+          <button type="submit" class="w-full bg-[#002d62] text-white py-2 rounded hover:bg-[#001b3c]">{{ __('Add co-organizer') }}</button>
+      </form>
+      @endif
+  </div>
+  @endif
 
       </div>
 
