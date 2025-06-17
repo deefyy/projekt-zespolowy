@@ -2,10 +2,10 @@
     <div class="min-h-screen bg-[#f0f4f9] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
             <h2 class="text-center text-3xl font-bold text-[#002d62]">
-                Zweryfikuj swój adres e-mail
+                {{ __('Verify Your Email Address') }}
             </h2>
             <p class="mt-2 text-center text-sm text-gray-600">
-                Dziękujemy za rejestrację! Zanim rozpoczniesz korzystanie z aplikacji, potwierdź swój adres e-mail.
+                {{ __('Thanks for signing up! Before getting started, please confirm your email address.') }}
             </p>
         </div>
 
@@ -15,12 +15,12 @@
                 {{-- Komunikat o wysłanym linku --}}
                 @if (session('status') == 'verification-link-sent')
                     <div class="mb-4 font-medium text-sm text-green-600">
-                        Nowy link weryfikacyjny został wysłany na Twój adres e-mail.
+                        {{ __('A new verification link has been sent to your email address.') }}
                     </div>
                 @endif
 
                 <p class="mb-6 text-sm">
-                    Kliknij w link weryfikacyjny, który wysłaliśmy na Twój adres e-mail. Jeśli nie otrzymałeś wiadomości, możesz wysłać nowy link.
+                    {{ __("Click the verification link we sent to your email address. If you didn't receive the email, you can send a new link.") }}
                 </p>
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -29,7 +29,7 @@
                         @csrf
                         <button type="submit"
                                 class="bg-[#002d62] hover:bg-[#001b3e] text-white px-5 py-2 rounded-md shadow">
-                            Wyślij ponownie link weryfikacyjny
+                            {{ __('Resend Verification Link') }}
                         </button>
                     </form>
 
@@ -38,7 +38,7 @@
                         @csrf
                         <button type="submit"
                                 class="text-sm text-gray-600 hover:underline focus:outline-none">
-                            Wyloguj się
+                            {{ __('Log Out') }}
                         </button>
                     </form>
                 </div>

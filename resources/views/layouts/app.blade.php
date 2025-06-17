@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
 
-    <title>{{ config('app.name', 'Platforma Konkursowa PG') }}</title>
+    <title>{{ config('app.name', __('Competition Platform')) }}</title>
 
     <!-- Fonts & CSS -->
     <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />

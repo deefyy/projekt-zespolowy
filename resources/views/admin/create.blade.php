@@ -53,11 +53,11 @@
                     <div class="flex justify-between items-center">
                         <a href="{{ route('admin.dashboard') }}"
                            class="inline-block bg-gray-300 text-gray-800 px-5 py-2 rounded-xl hover:bg-gray-400 transition">
-                            ← Wróć
+                            {{ __('Back') }}
                         </a>
                         <button type="submit"
                                 class="bg-[#002d62] text-white px-6 py-2 rounded-xl hover:bg-[#001b3e] transition">
-                            💾 Zapisz
+                            {{ __('Save') }}
                         </button>
                     </div>
                 </form>

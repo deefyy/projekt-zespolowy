@@ -3,7 +3,7 @@
         <header class="bg-[#eaf0f6] border-b border-[#cdd7e4] py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h2 class="text-3xl font-bold text-[#002d62] text-center break-words">
-                    Zarządzanie punktami – {{ $competition->name }}
+                    {{ __('Manage points -') }} {{ $competition->name }}
                 </h2>
             </div>
         </header>
@@ -13,7 +13,6 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white p-6 rounded-xl shadow">
 
-                {{-- komunikaty --}}
                 @if(session('success'))
                     <div class="mb-4 p-4 bg-green-100 text-green-800 rounded">
                         {{ session('success') }}
@@ -35,9 +34,9 @@
                         <table class="min-w-full bg-white border border-gray-200 rounded">
                             <thead class="bg-gray-100 text-[#002d62] text-sm font-semibold">
                                 <tr>
-                                    <th class="px-4 py-3 border-b text-left">Uczeń</th>
+                                    <th class="px-4 py-3 border-b text-left">{{ __('Student') }}</th>
                                     @foreach($stages as $stage)
-                                        <th class="px-4 py-3 border-b text-center">Etap {{ $stage->stage }}</th>
+                                        <th class="px-4 py-3 border-b text-center">{{ __('Stage') }} {{ $stage->stage }}</th>
                                     @endforeach
                                 </tr>
                             </thead>
@@ -72,12 +71,12 @@
                     <div class="mt-6 flex items-center gap-4">
                         <button type="submit"
                                 class="bg-[#002d62] text-white px-6 py-2 rounded-xl hover:bg-[#001b3e]">
-                            Zapisz
+                            {{ __('Save') }}
                         </button>
 
                         <a href="{{ route('competitions.show', $competition) }}"
                            class="text-blue-500 underline">
-                            ← Wróć do konkursu
+                            ← {{ __('Back to competition') }}
                         </a>
                     </div>
                 </form>

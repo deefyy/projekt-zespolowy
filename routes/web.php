@@ -36,10 +36,12 @@ Route::middleware(['auth'])->group(function () {
 
             Route::get('competitions/{competition}/edit', [CompetitionController::class, 'edit'])->name('competitions.edit');
             Route::get('competitions/{competition}/export-registrations', [CompetitionController::class, 'exportRegistrations'])->name('competitions.exportRegistrations');            Route::get('competitions/{competition}/import', [App\Http\Controllers\CompetitionController::class, 'showImportForm'])->name('competitions.showImportForm');
-            Route::post('competitions/{competition}/import/upload', [App\Http\Controllers\CompetitionController::class, 'handleImportUpload'])->name('competitions.handleImportUpload');
-            Route::get('competitions/{competition}/import/map', [App\Http\Controllers\CompetitionController::class, 'showMappingForm'])->name('competitions.showMappingForm');
-            Route::get('competitions/{competition}/import/summary', [App\Http\Controllers\CompetitionController::class, 'showSummary'])->name('competitions.showSummary');
-            Route::post('competitions/{competition}/import/process', [App\Http\Controllers\CompetitionController::class, 'processImport'])->name('competitions.processImport');
+    Route::get('competitions/{competition}/import', [App\Http\Controllers\CompetitionController::class, 'showImportForm'])->name('competitions.showImportForm');
+    Route::post('competitions/{competition}/import/upload', [App\Http\Controllers\CompetitionController::class, 'handleImportUpload'])->name('competitions.handleImportUpload');
+    Route::get('competitions/{competition}/import/map', [App\Http\Controllers\CompetitionController::class, 'showMappingForm'])->name('competitions.showMappingForm');
+    Route::post('competitions/{competition}/import/map', [App\Http\Controllers\CompetitionController::class, 'handleMapping'])->name('competitions.handleMapping');
+    Route::get('competitions/{competition}/import/summary', [App\Http\Controllers\CompetitionController::class, 'showSummary'])->name('competitions.showSummary');
+    Route::post('competitions/{competition}/import/process', [App\Http\Controllers\CompetitionController::class, 'processImport'])->name('competitions.processImport');
             Route::put('competitions/{competition}', [CompetitionController::class, 'update'])->name('competitions.update');
             Route::delete('competitions/{competition}', [CompetitionController::class, 'destroy'])->name('competitions.destroy');   
 

@@ -10,7 +10,6 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     
-                    {{-- Wyświetlanie błędów --}}
                     @if(session('error') || session('error_critical'))
                         <div class="mb-4 p-4 bg-red-100 dark:bg-red-700 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded">
                             {{ session('error') ?? session('error_critical') }}
@@ -21,16 +20,8 @@
                         {{ __('System nie znalazł automatycznego dopasowania dla poniższych pól. Wybierz z listy nagłówek z Twojego pliku, który odpowiada wymaganemu polu systemowemu.') }}
                     </p>
 
-                    <form action="{{ route('competitions.processImport', $competition) }}" method="POST">
+                    <form action="{{ route('competitions.handleMapping', $competition) }}" method="POST">
                         @csrf
-
-                        {{-- Ukryte pola dla automatycznie zmapowanych nagłówków --}}
-                        @if(!empty(session('import_auto_mappings')))
-                            @foreach(session('import_auto_mappings') as $expected => $actual)
-                                <input type="hidden" name="column_mappings[{{ $expected }}]" value="{{ $actual }}">
-                            @endforeach
-                        @endif
-
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             @if(!empty($unmatchedHeaders))
                                 @foreach($unmatchedHeaders as $expected)
@@ -40,7 +31,7 @@
                                         </label>
                                         <select name="column_mappings[{{ $expected }}]" id="mapping_{{ Str::slug($expected) }}"
                                                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                            <option value="">-- Wybierz kolumnę z Twojego pliku --</option>
+                                            <option value="">-- {{ __('Wybierz kolumnę z Twojego pliku') }} --</option>
                                             @if(!empty($availableHeadings))
                                                 @foreach($availableHeadings as $actual)
                                                     <option value="{{ $actual }}" @if(old('column_mappings.'.$expected) === $actual) selected @endif>
@@ -56,7 +47,7 @@
 
                         <div class="mt-8">
                             <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
-                                {{ __('Zatwierdź i Importuj Dane') }}
+                                {{ __('Przejdź do podsumowania') }}
                             </button>
                         </div>
                     </form>

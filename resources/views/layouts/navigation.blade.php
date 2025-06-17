@@ -7,25 +7,24 @@
                 </a>
                 <div class="hidden sm:flex space-x-6 text-lg font-semibold tracking-wide">
                     <x-nav-link :href="route('home')" :active="request()->routeIs('home')" class="text-white hover:text-blue-300">
-                        Strona główna
+                        {{ __('Home') }}
                     </x-nav-link>
                     <x-nav-link :href="route('competitions.index')" :active="request()->routeIs('competitions.*')" class="text-white hover:text-blue-300">
-                        Konkursy
+                        {{ __('Competitions') }}
                     </x-nav-link>
                     <x-nav-link :href="route('forums.index')" :active="request()->routeIs('forums.*')" class="text-white hover:text-blue-300">
-                        Forum
+                        {{ __('Forum') }}
                     </x-nav-link>
                 </div>
             </div>
 
-            
-
             <div class="hidden sm:flex items-center gap-4">
                 <div class="flex items-center gap-2 text-white text-base font-semibold">
-                    <a href="{{ route('language.set', 'pl') }}" class="{{ session('locale', 'pl') == 'pl' ? 'underline' : 'opacity-75' }} hover:opacity-100">PL</a>
+                    <a href="{{ route('language.set', 'pl') }}" class="{{ session('locale', config('app.locale')) == 'pl' ? 'underline' : 'opacity-75' }} hover:opacity-100">PL</a>
                     <span>/</span>
-                    <a href="{{ route('language.set', 'en') }}" class="{{ session('locale', 'pl') == 'en' ? 'underline' : 'opacity-75' }} hover:opacity-100">EN</a>
+                    <a href="{{ route('language.set', 'en') }}" class="{{ session('locale', config('app.locale')) == 'en' ? 'underline' : 'opacity-75' }} hover:opacity-100">EN</a>
                 </div>
+                
                 {{-- WCAG IKONY --}}
                 <div class="flex items-center gap-2 text-white text-base">
                     <button onclick="resetWCAGSettings()" class="px-2 py-1 hover:bg-white hover:text-[#002d62] rounded transition border border-transparent hover:border-white">A</button>
@@ -44,25 +43,24 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-
                         </x-slot>
                         <x-slot name="content">
-                            <x-dropdown-link :href="route('profile.edit')">Profil</x-dropdown-link>
+                            <x-dropdown-link :href="route('profile.edit')">{{ __('My profile') }}</x-dropdown-link>
                             @if (Auth::user()->role === 'admin')
-                                <x-dropdown-link :href="route('admin.dashboard')">Panel admina</x-dropdown-link>
+                                <x-dropdown-link :href="route('admin.dashboard')">{{ __('Admin Panel') }}</x-dropdown-link>
                             @endif
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <x-dropdown-link href="{{ route('logout') }}" onclick="event.preventDefault(); this.closest('form').submit();">
-                                    Wyloguj się
+                                    {{ __('Log Out') }}
                                 </x-dropdown-link>
                             </form>
                         </x-slot>
                     </x-dropdown>
                 @else
                     <div class="flex gap-3">
-                        <a href="{{ route('login') }}" class="font-semibold hover:text-blue-300">Zaloguj</a>
-                        <a href="{{ route('register') }}" class="font-semibold hover:text-blue-300">Rejestracja</a>
+                        <a href="{{ route('login') }}" class="font-semibold hover:text-blue-300">{{ __('Log In') }}</a>
+                        <a href="{{ route('register') }}" class="font-semibold hover:text-blue-300">{{ __('Register') }}</a>
                     </div>
                 @endauth
             </div>
@@ -81,8 +79,8 @@
 
     {{-- Mobile menu --}}
     <div :class="{ 'block': open, 'hidden': !open }" class="hidden sm:hidden bg-[#002d62] px-4 py-3 space-y-1 text-sm">
-        <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')" class="text-white">Strona główna</x-responsive-nav-link>
-        <x-responsive-nav-link :href="route('competitions.index')" :active="request()->routeIs('competitions.*')" class="text-white">Konkursy</x-responsive-nav-link>
-        <x-responsive-nav-link :href="route('forums.index')" :active="request()->routeIs('forums.*')" class="text-white">Forum</x-responsive-nav-link>
+        <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')" class="text-white">{{ __('Home') }}</x-responsive-nav-link>
+        <x-responsive-nav-link :href="route('competitions.index')" :active="request()->routeIs('competitions.*')" class="text-white">{{ __('Competitions') }}</x-responsive-nav-link>
+        <x-responsive-nav-link :href="route('forums.index')" :active="request()->routeIs('forums.*')" class="text-white">{{ __('Forum') }}</x-responsive-nav-link>
     </div>
 </nav>
