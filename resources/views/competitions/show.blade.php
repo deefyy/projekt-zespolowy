@@ -152,7 +152,7 @@
               <tr>
                 <th class="text-left px-4 py-2 border-b">{!! sortLink('student.name', __('Name')) !!}</th>
                 <th class="text-left px-4 py-2 border-b">{!! sortLink('student.last_name', __('Surname')) !!}</th>
-                <th class="text-left px-4 py-2 border-b">{!! sortLink('student.class', __('Class')) !!}</th>
+                <th class="text-left px-4 py-2 border-b">{{ __('Class') }}</th>
                 <th class="text-left px-4 py-2 border-b">{!! sortLink('student.school', __('School')) !!}</th>
                 @foreach($competition->stages as $stage)
                   <th class="text-center px-4 py-2 border-b">{{ __('Stage') }} {{ $stage->stage }}</th>

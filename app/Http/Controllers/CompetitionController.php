@@ -648,27 +648,43 @@ class CompetitionController extends Controller
         return Excel::download(new CompetitionsExport($competition), 'rejestracje.xlsx');
     }
 
-    public function editPoints(Competition $competition)
-    {
-        $userRole = auth()->user()?->role;
-        if (! ($userRole === 'admin' || $userRole === 'organizator')) {
-            abort(403, 'Brak dostępu');
-        }
-        $studentIds = $competition->registrations()->pluck('student_id');
-        $students = Student::whereIn('id', $studentIds)->get();
-        $stages = $competition->stages()->get();
-        $points = [];
+    public function editPoints(Request $request, Competition $competition)
+{
+    $userRole = auth()->user()?->role;
+    if (! ($userRole === 'admin' || $userRole === 'organizator')) {
+        abort(403, 'Brak dostępu');
+    }
+
+    $search = $request->input('search');
+
+    $studentIds = $competition->registrations()->pluck('student_id');
+
+    $studentsQuery = Student::whereIn('id', $studentIds);
+
+    if ($search) {
+        $studentsQuery->where(function ($query) use ($search) {
+            $query->where('name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('class', 'like', "%{$search}%");
+        });
+    }
+
+    $students = $studentsQuery->get();
+
+    $stages = $competition->stages()->get();
+
+    $points = [];
     StageCompetition::where('competition_id', $competition->id)
         ->get()
         ->each(function ($rec) use (&$points) {
             $points[$rec->student_id][$rec->stage_id] = $rec->result;
         });
 
-        return view(
-            'competitions.points.edit',
-            compact('competition', 'students', 'stages', 'points')
-        );
-    }
+    return view('competitions.points.edit', compact(
+        'competition', 'students', 'stages', 'points', 'search'
+    ));
+}
+
     public function updatePoints(Request $request, Competition $competition)
     {
         $userRole = auth()->user()?->role;
