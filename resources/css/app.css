@@ -87,3 +87,15 @@
 body {
     transition: all 0.3s ease-in-out; /* Płynne przejście przy zmianie stylów */
 }
+
+dialog.modal-center[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.3); /* ciemne tło */
+    padding: 0;
+    margin: 0;
+    z-index: 50;
+}

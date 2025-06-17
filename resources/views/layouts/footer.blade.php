@@ -20,12 +20,7 @@
                     @endauth
                 </ul>
             </div>
-            <div>
-                <h4 class="uppercase font-semibold tracking-wide mb-3">Dla organizatorów</h4>
-                <ul class="space-y-1">
-                    <li><a href="#" class="hover:text-white">Pomoc</a></li>
-                </ul>
-            </div>
+            
             <div>
                 <h4 class="uppercase font-semibold tracking-wide mb-3">Kontakt</h4>
                 <address class="not-italic leading-relaxed text-sm">

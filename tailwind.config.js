@@ -9,6 +9,13 @@ export default {
         './resources/views/**/*.blade.php',
     ],
 
+    safelist: [
+        'animate-spin', // ⬅️ Dodaj to
+        'opacity-60',   // ⬅️ Dla przycisku w trakcie ładowania
+        'cursor-not-allowed',
+        'w-5', 'h-5', 'ml-2', 'opacity-25', 'opacity-75'
+    ],
+
     theme: {
         extend: {
             fontFamily: {

@@ -5,10 +5,7 @@
     function sortIcon($column) {
         $sort = request('sort');
         $direction = request('direction', 'asc');
-        if ($sort === $column) {
-            return $direction === 'asc' ? '▲' : '▼';
-        }
-        return '↕';
+        return $sort === $column ? ($direction === 'asc' ? '▲' : '▼') : '↕';
     }
 
     function sortLink($column, $label) {
@@ -17,106 +14,111 @@
         $nextDirection = ($currentSort === $column && $currentDirection === 'asc') ? 'desc' : 'asc';
         $search = request('search');
         $url = url()->current() . "?sort={$column}&direction={$nextDirection}&search={$search}";
-        return "<a href=\"{$url}\">{$label} <span class=\"sort-icon\">" . sortIcon($column) . "</span></a>";
+        return "<a href=\"{$url}\" class=\"hover:underline font-semibold text-[#002d62]\">{$label} <span>" . sortIcon($column) . "</span></a>";
     }
 @endphp
 
 <x-app-layout>
     <x-slot name="header">
-        <div class="pg-header-bar">
-            <div class="pg-header-container">
-                <h1 class="pg-header-title">{{ __('Admin Panel') }}</h1>
+        <header class="bg-[#eaf0f6] border-b border-[#cdd7e4] py-6">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-[#002d62] text-center">Zarządzanie użytkownikami</h2>
             </div>
-        </div>
+        </header>
     </x-slot>
 
-    @if(session('success'))
-        <div class="pg-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ __('Close') }}"></button>
-        </div>
-    @endif
+    <div class="py-12 bg-[#f9fbfd] min-h-screen">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
-    <div class="container py-4">
-        <div class="row mb-4 justify-content-between align-items-center">
-            <div class="col-md-7 pg-search">
-                <form method="GET" action="{{ route('admin.dashboard') }}">
-                    <div class="input-group">
-                        <input type="text" name="search" class="form-control" placeholder="{{ __('Search user...') }}" value="{{ request('search') }}">
-                        <button class="btn" type="submit">{{ __('Search') }}</button>
-                    </div>
+            {{-- Wyszukiwarka + przycisk --}}
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <form method="GET" action="{{ route('admin.dashboard') }}" class="flex flex-wrap gap-4 items-center">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Szukaj użytkownika..."
+                           class="border border-[#cdd7e4] rounded-xl px-4 py-2 w-full sm:w-80 shadow-sm">
+                    <button type="submit"
+                            class="bg-[#002d62] text-white px-5 py-2 rounded-xl hover:bg-[#001b3e] transition">
+                        🔍 Szukaj
+                    </button>
                 </form>
-            </div>
-            <div class="col-md-auto mt-3 mt-md-0 text-md-end">
-                <a href="{{ route('admin.createUser') }}" class="btn btn-success">
-                    <i class="bi bi-person-plus"></i> {{ __('Add user') }}
+
+                <a href="{{ route('admin.createUser') }}"
+                   class="inline-block bg-[#002d62] text-white px-6 py-3 rounded-xl hover:bg-[#001b3e] transition font-semibold">
+                    ➕ {{ __('Add user') }}
                 </a>
             </div>
-        </div>
 
-        <div class="card pg-card">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-bordered align-middle mb-0 text-center pg-table">
-                        <thead>
-                            <tr>
-                                <th>{!! sortLink('name', __('Name')) !!}</th>
-                                <th>{!! sortLink('last_name', __('Surname')) !!}</th>
-                                <th>{!! sortLink('email', __('Email')) !!}</th>
-                                <th>{!! sortLink('role', __('Role')) !!}</th>
-                                <th>{{ __('Actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($users as $user)
-                                <tr>
-                                    <td>{{ $user->name }}</td>
-                                    <td>{{ $user->last_name }}</td>
-                                    <td>{{ $user->email }}</td>
-                                    <td>{{ __(ucfirst($user->role)) }}</td>
-                                    <td>
-                                        <a href="{{ route('admin.editUser', $user->id) }}" class="btn btn-sm pg-btn-outline me-1">
-                                            {{ __('Edit') }}
-                                        </a>
-                                        @if(auth()->id() !== $user->id)
-                                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ $user->id }}">
-                                                {{ __('Delete') }}
-                                            </button>
-
-                                            <div class="modal fade" id="deleteModal{{ $user->id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ $user->id }}" aria-hidden="true">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">{{ __('Confirmation of deletion') }}</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            {{ __('Are you sure you want to delete the user') }} <strong>{{ $user->name }} {{ $user->last_name }}</strong>?
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                                                            <form action="{{ route('admin.deleteUser', $user->id) }}" method="POST" class="d-inline">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button class="btn btn-danger">{{ __('Delete') }}</button>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="pg-muted py-4">{{ __('No users to display.') }}</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+            {{-- Komunikat sukcesu --}}
+            @if(session('success'))
+                <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded">
+                    {{ session('success') }}
                 </div>
-                <div class="mt-3 px-3">
-                    {{ $users->links() }}
+            @endif
+
+            {{-- Tabela użytkowników --}}
+            <div class="bg-white shadow-sm border border-[#cdd7e4] rounded-2xl overflow-hidden">
+                <table class="w-full table-auto text-sm text-center">
+                    <thead class="bg-[#f1f5fb] text-[#002d62]">
+                        <tr>
+                            <th class="px-4 py-3">{!! sortLink('name', 'Imię') !!}</th>
+                            <th class="px-4 py-3">{!! sortLink('last_name', 'Nazwisko') !!}</th>
+                            <th class="px-4 py-3">{!! sortLink('email', 'Email') !!}</th>
+                            <th class="px-4 py-3">{!! sortLink('role', 'Rola') !!}</th>
+                            <th class="px-4 py-3">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#edf2f7]">
+                        @forelse($users as $user)
+                            <tr class="hover:bg-[#f9fbfd]">
+                                <td class="px-4 py-3">{{ $user->name }}</td>
+                                <td class="px-4 py-3">{{ $user->last_name }}</td>
+                                <td class="px-4 py-3">{{ $user->email }}</td>
+                                <td class="px-4 py-3">{{ ucfirst($user->role) }}</td>
+                                <td class="px-4 py-3 space-x-2">
+                                    <a href="{{ route('admin.editUser', $user->id) }}"
+                                       class="text-blue-600 hover:underline">Edytuj</a>
+
+                                    @if(auth()->id() !== $user->id)
+                                        <button type="button"
+                                                onclick="document.getElementById('modal-{{ $user->id }}').classList.remove('hidden')"
+                                                class="text-red-600 hover:underline">Usuń</button>
+
+                                        {{-- MODAL --}}
+                                        <div id="modal-{{ $user->id }}"
+                                             class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+                                            <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                                                <form method="POST" action="{{ route('admin.deleteUser', $user->id) }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <h3 class="text-lg font-bold mb-2">Potwierdzenie usunięcia</h3>
+                                                    <p>Czy na pewno chcesz usunąć użytkownika <strong>{{ $user->name }} {{ $user->last_name }}</strong>?</p>
+                                                    <div class="mt-6 flex justify-end gap-3">
+                                                        <button type="button"
+                                                                onclick="document.getElementById('modal-{{ $user->id }}').classList.add('hidden')"
+                                                                class="px-4 py-2 border rounded hover:bg-gray-100">
+                                                            Anuluj
+                                                        </button>
+                                                        <button type="submit"
+                                                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                                                            Usuń
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="px-4 py-6 text-gray-500 italic">{{ __('No users to display.') }}</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+
+                {{-- Paginacja --}}
+                <div class="p-4">
+                    {{ $users->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>
