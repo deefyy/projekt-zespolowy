@@ -525,28 +525,26 @@ class CompetitionController extends Controller
 
         foreach ($rows as $row) {
             $excelRowData = $row->toArray();
-            $systemId = $importer->getRowValueForSummary($excelRowData, 'ID Systemowe');
-            $studentName = $importer->getRowValueForSummary($excelRowData, 'Imię ucznia');
-            $studentLastName = $importer->getRowValueForSummary($excelRowData, 'Nazwisko ucznia');
+            $systemId = $importer->getRowValue($excelRowData, 'ID Systemowe'); // ZMIENIONO na getRowValue
+            $studentName = $importer->getRowValue($excelRowData, 'Imię ucznia');
+            $studentLastName = $importer->getRowValue($excelRowData, 'Nazwisko ucznia');
             $displayName = trim("{$studentName} {$studentLastName}");
 
             if (is_numeric($systemId)) {
                 $registration = CompetitionRegistration::with('student')->find((int)$systemId);
-                // --- POCZĄTEK POPRAWKI ---
                 if ($registration && $registration->student && $registration->competition_id === $competition->id) {
-                // --- KONIEC POPRAWKI ---
                     $diff = [];
                     $studentInDb = $registration->student;
                     foreach ($expectedHeadersForDiff as $header) {
-                        $excelValue = (string)$importer->getRowValueForSummary($excelRowData, $header, '');
+                        $excelValue = (string)$importer->getRowValue($excelRowData, $header, ''); // ZMIENIONO na getRowValue
                         $dbValue = '';
                         if (str_contains($header, 'ETAP')) {
                             preg_match('/(\d+)\s*ETAP/', $header, $matches);
                             $stageNumber = $matches[1];
                             $stage = $competitionStages->where('stage', $stageNumber)->first();
                             if ($stage) {
-                               $stageResult = StageCompetition::where('student_id', $studentInDb->id)->where('stage_id', $stage->id)->where('competition_id', $competition->id)->first();
-                               $dbValue = (string)($stageResult->result ?? '');
+                            $stageResult = StageCompetition::where('student_id', $studentInDb->id)->where('stage_id', $stage->id)->where('competition_id', $competition->id)->first();
+                            $dbValue = (string)($stageResult->result ?? '');
                             }
                         } else {
                             $attribute = match($header) {
@@ -557,12 +555,12 @@ class CompetitionController extends Controller
                                 'Oświadczenie' => 'statement', default => null
                             };
                             if ($attribute) {
-                               if ($attribute === 'statement') {
-                                   $dbValue = $studentInDb->statement ? 'true' : 'false';
-                                   $excelValue = $importer->parseBoolean($importer->getRowValueForSummary($excelRowData, $header, '')) ? 'true' : 'false';
-                               } else {
-                                   $dbValue = (string)($studentInDb->$attribute ?? '');
-                               }
+                            if ($attribute === 'statement') {
+                                $dbValue = $studentInDb->statement ? 'true' : 'false';
+                                $excelValue = $importer->parseBoolean($importer->getRowValue($excelRowData, $header, '')) ? 'true' : 'false'; // ZMIENIONO na getRowValue
+                            } else {
+                                $dbValue = (string)($studentInDb->$attribute ?? '');
+                            }
                             }
                         }
                         if ($excelValue !== $dbValue) {
