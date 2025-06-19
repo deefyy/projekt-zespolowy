@@ -51,7 +51,7 @@ class AdminController extends Controller
             'last_name' => 'nullable',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
-            'role' => 'required|in:user,employee,admin',
+            'role' => 'required|in:user,organizator,admin',
         ]);
 
         $user = User::create([

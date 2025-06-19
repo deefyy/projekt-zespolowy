@@ -47,6 +47,7 @@
                                 required>
                             <option value="user">{{ __('User') }}</option>
                             <option value="admin">{{ __('Administrator') }}</option>
+                            <option value="organizator"> {{__('Organizer') }}</option>
                         </select>
                     </div>
 
