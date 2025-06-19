@@ -20,14 +20,14 @@
                 @endif
 
                 <p class="mb-6 text-sm text-gray-700">
-                    {{ __('Wybierz plik Excel do zaimportowania. W kolejnym kroku system przeanalizuje nagłówki kolumn i pozwoli je dopasować.') }}
+                    {{ __('Select an Excel file to import. In the next step, the system will analyze the column headers and allow you to match them.') }}
                 </p>
 
                 <form action="{{ route('competitions.handleImportUpload', $competition) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="mb-6">
                         <label for="excel_file" class="block text-sm font-medium text-gray-900 mb-2">
-                            {{ __('Plik Excel (.xlsx, .xls, .csv):') }}
+                            {{ __('Excel file (.xlsx, .xls, .csv):') }}
                         </label>
                         <input type="file" name="excel_file" id="excel_file" required
                                class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#002d62] file:bg-[#002d62] file:text-white file:rounded-md file:border-0 file:px-4 file:py-2 hover:file:bg-[#001a40] transition">
@@ -39,7 +39,7 @@
                     <div class="text-right">
                         <button type="submit"
                                 class="bg-[#0073cf] hover:bg-[#005999] text-white font-semibold py-2 px-6 rounded-xl shadow transition">
-                            {{ __('Przejdź do analizy pliku') }}
+                            {{ __('Proceed to file analysis') }}
                         </button>
                     </div>
                 </form>

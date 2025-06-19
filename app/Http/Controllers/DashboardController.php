@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Competition;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 
 class DashboardController extends Controller
 {
      public function index(Request $request)
     {
-        Carbon::setLocale('pl');
+        Carbon::setLocale(App::getLocale());
 
         $base     = $request->query('month');           
         $firstDay = $base

@@ -70,94 +70,72 @@
         </div>
 
         @if($showPanel)
-<div class="bg-[#eaf0f6] border border-[#cdd7e4] p-4 rounded-xl space-y-3 h-fit">
-    <h3 class="text-lg font-bold text-[#002d62] mb-3">Zarządzanie konkursem</h3>
+        <div class="bg-[#eaf0f6] border border-[#cdd7e4] p-4 rounded-xl space-y-3 h-fit">
+          <h3 class="text-lg font-bold text-[#002d62] mb-3">{{ __('Competition Management') }}</h3>
+          <a href="{{ route('competitions.edit', $competition) }}" class="block bg-yellow-500 text-white text-center py-2 px-3 rounded hover:bg-yellow-600">{{ __('Edit competition') }}</a>
 
-    <a href="{{ route('competitions.edit', $competition) }}" class="block bg-yellow-500 text-white text-center py-2 px-3 rounded hover:bg-yellow-600">Edytuj konkurs</a>
-
-    @if(!$isCoOrganizer)
-        <!-- Przycisk otwierający modal -->
-<button type="button"
-        onclick="document.getElementById('delete-modal').classList.remove('hidden')"
-        class="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700">
-    Usuń konkurs
-</button>
-
-<!-- MODAL -->
-<div id="delete-modal"
-     class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
-
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-        <form action="{{ route('competitions.destroy', $competition) }}" method="POST">
-            @csrf
-            @method('DELETE')
-            <h3 class="text-lg font-bold mb-2">Potwierdzenie usunięcia</h3>
-            <p class="break-words">Czy na pewno chcesz usunąć konkurs <strong>{{ $competition->name }}</strong>?</p>
-            <div class="mt-6 flex justify-end gap-3">
-                <button type="button"
-                        onclick="document.getElementById('delete-modal').classList.add('hidden')"
-                        class="px-4 py-2 border rounded hover:bg-gray-100">
-                    Anuluj
-                </button>
-                <button type="submit"
-                        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                    Usuń
-                </button>
+          @if(!$isCoOrganizer)
+            <button type="button" onclick="document.getElementById('delete-modal').classList.remove('hidden')" class="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700">
+                {{ __('Delete competition') }}
+            </button>
+            <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+                <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                    <form action="{{ route('competitions.destroy', $competition) }}" method="POST">
+                        @csrf
+                        @method('DELETE')
+                        <h3 class="text-lg font-bold mb-2">{{ __('Confirmation of deletion') }}</h3>
+                        <p class="break-words">{{ __('Are you sure you want to delete this competition?') }} <strong>{{ $competition->name }}</strong>?</p>
+                        <div class="mt-6 flex justify-end gap-3">
+                            <button type="button" onclick="document.getElementById('delete-modal').classList.add('hidden')" class="px-4 py-2 border rounded hover:bg-gray-100">{{ __('Cancel') }}</button>
+                            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">{{ __('Delete') }}</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </form>
-    </div>
-</div>
+          @endif
 
-    @endif
+          <a href="{{ route('competitions.exportRegistrations', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">{{ __('Export to Excel') }}</a>
+          <a href="{{ route('competitions.showImportForm', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">{{ __('Import from Excel') }}</a>
+          <a href="{{ route('competitions.points.edit', $competition) }}" class="block bg-indigo-600 text-white text-center py-2 px-3 rounded hover:bg-indigo-700">{{ __('Manage points') }}</a>
 
-    <a href="{{ route('competitions.exportRegistrations', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">Eksportuj do Excela</a>
-    <a href="{{ route('competitions.showImportForm', $competition) }}" class="block bg-green-700 text-white text-center py-2 px-3 rounded hover:bg-green-800">Importuj z Excela</a>
-    <a href="{{ route('competitions.points.edit', $competition) }}" class="block bg-indigo-600 text-white text-center py-2 px-3 rounded hover:bg-indigo-700">Zarządzaj punktami</a>
-
-        @if($errors->any())
+          @if($errors->any())
             <div class="mt-4 p-4 bg-red-100 text-red-800 rounded">
-                <ul class="list-disc pl-5 space-y-1">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+              <ul class="list-disc pl-5 space-y-1">
+                @foreach($errors->all() as $error)
+                  <li>{{ $error }}</li>
+                @endforeach
+              </ul>
             </div>
-        @endif
-
-        @if(session('status'))
+          @endif
+          @if(session('status'))
             <div class="mt-4 p-4 bg-green-100 text-green-800 rounded">
-                {{ session('status') }}
+              {{ session('status') }}
             </div>
+          @endif
+
+          @if(!$isCoOrganizer)
+            <form action="{{ route('competitions.inviteCoorganizer', $competition) }}" method="POST" class="mt-4">
+                @csrf
+                <input type="email" name="email" required placeholder="{{ __('Co-organizer email') }}" class="form-input border border-gray-300 rounded px-3 py-2 w-full mb-2" />
+                <button type="submit" class="w-full bg-[#002d62] text-white py-2 rounded hover:bg-[#001b3c]">{{ __('Add co-organizer') }}</button>
+            </form>
+          @endif
+        </div>
         @endif
-
-
-    @if(!$isCoOrganizer)
-      <form action="{{ route('competitions.inviteCoorganizer', $competition) }}" method="POST" class="mt-4">
-          @csrf
-          <input type="email" name="email" required placeholder="{{ __('Co-organizer email') }}" class="form-input border border-gray-300 rounded px-3 py-2 w-full mb-2" />
-          <button type="submit" class="w-full bg-[#002d62] text-white py-2 rounded hover:bg-[#001b3c]">{{ __('Add co-organizer') }}</button>
-      </form>
-      @endif
-  </div>
-  @endif
-
       </div>
 
       @auth
       @if($userRegistrations->count() > 0)
       <div class="mt-12 bg-white p-6 rounded-xl shadow">
         <h3 class="text-xl font-bold text-[#002d62] mb-4">{{ __('Your registered students:') }}</h3>
-
         <form method="GET" class="mb-4 flex flex-wrap gap-4 items-end">
           @foreach (request()->except('search', 'page') as $key => $value)
             <input type="hidden" name="{{ $key }}" value="{{ $value }}">
           @endforeach
-
           <div>
             <label for="search" class="block text-sm font-medium text-gray-700">{{ __('Search student') }}</label>
             <input type="text" name="search" id="search" value="{{ request('search') }}" class="border-gray-300 rounded w-48" placeholder="{{ __('Name, surname, class, school...') }}" />
           </div>
-
           <div>
             <button type="submit" class="bg-[#002d62] text-white px-4 py-2 rounded hover:bg-[#001b3c] mt-5">{{ __('Search') }}</button>
           </div>
@@ -199,11 +177,21 @@
                     <td class="px-4 py-2 border-b">
                       @if($canEditOrDelete)
                         <a href="{{ route('students.edit', $reg->student->id) }}" class="text-blue-500 hover:underline mr-2">{{ __('Edit') }}</a>
-                        <form action="{{ route('students.destroy', $reg->student->id) }}" method="POST" class="inline-block" onsubmit="return confirm('{{ __("Are you sure you want to delete this student?") }}');">
-                          @csrf
-                          @method('DELETE')
-                          <button type="submit" class="text-red-500 hover:underline" data-skip-lock>{{ __('Delete') }}</button>
-                        </form>
+                        <button type="button" onclick="document.getElementById('delete-student-modal-{{ $reg->student->id }}').classList.remove('hidden')" class="text-red-500 hover:underline">{{ __('Delete') }}</button>
+                        <div id="delete-student-modal-{{ $reg->student->id }}" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+                            <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                                <form action="{{ route('students.destroy', $reg->student->id) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <h3 class="text-lg font-bold mb-2">{{ __('Confirmation of deletion') }}</h3>
+                                    <p>{{ __('Are you sure you want to delete this student?') }}</p>
+                                    <div class="mt-6 flex justify-end gap-3">
+                                        <button type="button" onclick="document.getElementById('delete-student-modal-{{ $reg->student->id }}').classList.add('hidden')" class="px-4 py-2 border rounded hover:bg-gray-100">{{ __('Cancel') }}</button>
+                                        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700" data-skip-lock>{{ __('Delete') }}</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                       @else
                         <span class="text-gray-400 italic">{{ __('No access') }}</span>
                       @endif

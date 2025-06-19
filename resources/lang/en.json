@@ -229,5 +229,14 @@
     "No user found with that email.": "No user found with that email.",
     "User must have the “organizator” role.": "User must have the “organizator” role.",
     "User is already a co-organizer.": "User is already a co-organizer.",
-    "Co-organizer added and notified.": "Co-organizer added and notified."
+    "Co-organizer added and notified.": "Co-organizer added and notified.",
+    "File analysis error": "File analysis error",
+    "The system could not find matching columns in your file. Please make sure the file has correct headers and try again.": "The system could not find matching columns in your file. Please make sure the file has correct headers and try again.",
+    "Go back and upload another file": "Go back and upload another file",
+    "Below is a list of changes that will be applied upon confirmation. Please verify the data is correct.": "Below is a list of changes that will be applied upon confirmation. Please verify the data is correct.",
+    "New entry (ID from file not found in the database)": "New entry (ID from file not found in the database)",
+    "New entry (no ID in file)": "New entry (no ID in file)",
+    "Confirm and Import": "Confirm and Import",
+    "Search student...": "Search student...",
+    "Reset": "Reset"
 }

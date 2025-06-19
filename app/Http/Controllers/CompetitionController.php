@@ -242,7 +242,6 @@ class CompetitionController extends Controller
             ->with('success', 'Konkurs został zaktualizowany.');
     }
 
-
     public function destroy(Competition $competition)
     {
         if (auth()->user()->role !== 'admin' && auth()->user()->role !== 'organizator') {
@@ -253,7 +252,6 @@ class CompetitionController extends Controller
 
         return redirect()->route('competitions.index')->with('success', 'Konkurs został usunięty.');
     }
-
 
     private function schoolClasses(): array
     {
@@ -445,7 +443,6 @@ class CompetitionController extends Controller
 
         foreach ($expectedHeaders as $expected) {
             $normalizedExpected = $this->normalizeHeader($expected);
-
             if (isset($normalizedFileHeadingsMap[$normalizedExpected])) {
                 $actualHeader = $normalizedFileHeadingsMap[$normalizedExpected];
                 $autoMappings[$expected] = $actualHeader;
@@ -457,18 +454,13 @@ class CompetitionController extends Controller
             }
         }
         
-        session([
-            'import_file_path' => $path,
-            'import_disk_name' => 'local',
-            'import_headings_in_file' => $headingsInFile,
-            'import_unmatched_expected_headers' => $unmatchedExpectedHeaders,
-            'import_available_headings_in_file' => array_values($availableHeadingsFromUserFile),
-            'import_auto_mappings' => $autoMappings,
-        ]);
+        session(['import_file_path' => $path, 'import_disk_name' => 'local', 'import_available_headings' => array_values($availableHeadingsFromUserFile), 'import_auto_mappings' => $autoMappings]);
 
         if (empty($unmatchedExpectedHeaders)) {
+            session(['import_final_mappings' => $autoMappings]);
             return redirect()->route('competitions.showSummary', $competition);
         } else {
+            session(['import_unmatched_expected_headers' => $unmatchedExpectedHeaders]);
             return redirect()->route('competitions.showMappingForm', $competition);
         }
     }
@@ -480,8 +472,8 @@ class CompetitionController extends Controller
         }
         return view('competitions.import.mapping_form', [
             'competition' => $competition,
-            'unmatchedHeaders' => session('import_unmatched_expected_headers'),
-            'availableHeadings' => session('import_available_headings_in_file'),
+            'unmatchedHeaders' => session('import_unmatched_expected_headers', []),
+            'availableHeadings' => session('import_available_headings', []),
         ]);
     }
     
@@ -519,13 +511,13 @@ class CompetitionController extends Controller
         $importer = new CompetitionsImport($competition, $mappingsForImporter);
         $rows = Excel::toCollection($importer, $filePath)[0];
 
-        $changes = ['updated' => [], 'created' => [], 'no_change' => []];
+        $changes = ['updated' => [], 'skipped' => [], 'no_change' => []];
         $expectedHeadersForDiff = array_diff($this->getExpectedHeaders($competition), ['ID Systemowe', 'SUMA']);
         $competitionStages = $competition->stages()->orderBy('stage')->get();
 
         foreach ($rows as $row) {
             $excelRowData = $row->toArray();
-            $systemId = $importer->getRowValue($excelRowData, 'ID Systemowe'); // ZMIENIONO na getRowValue
+            $systemId = $importer->getRowValue($excelRowData, 'ID Systemowe');
             $studentName = $importer->getRowValue($excelRowData, 'Imię ucznia');
             $studentLastName = $importer->getRowValue($excelRowData, 'Nazwisko ucznia');
             $displayName = trim("{$studentName} {$studentLastName}");
@@ -536,7 +528,7 @@ class CompetitionController extends Controller
                     $diff = [];
                     $studentInDb = $registration->student;
                     foreach ($expectedHeadersForDiff as $header) {
-                        $excelValue = (string)$importer->getRowValue($excelRowData, $header, ''); // ZMIENIONO na getRowValue
+                        $excelValue = (string)$importer->getRowValue($excelRowData, $header, '');
                         $dbValue = '';
                         if (str_contains($header, 'ETAP')) {
                             preg_match('/(\d+)\s*ETAP/', $header, $matches);
@@ -557,7 +549,7 @@ class CompetitionController extends Controller
                             if ($attribute) {
                             if ($attribute === 'statement') {
                                 $dbValue = $studentInDb->statement ? 'true' : 'false';
-                                $excelValue = $importer->parseBoolean($importer->getRowValue($excelRowData, $header, '')) ? 'true' : 'false'; // ZMIENIONO na getRowValue
+                                $excelValue = $importer->parseBoolean($importer->getRowValue($excelRowData, $header, '')) ? 'true' : 'false';
                             } else {
                                 $dbValue = (string)($studentInDb->$attribute ?? '');
                             }
@@ -573,10 +565,10 @@ class CompetitionController extends Controller
                         $changes['no_change'][] = ['name' => $displayName];
                     }
                 } else {
-                    $changes['created'][] = ['name' => $displayName, 'reason' => 'Nowy wpis (ID z pliku nie znaleziono w bazie)'];
+                    $changes['skipped'][] = ['name' => $displayName, 'reason' => 'Pominięto (ID z pliku nie znaleziono w bazie)'];
                 }
             } else {
-                if(!empty($displayName)) $changes['created'][] = ['name' => $displayName, 'reason' => 'Nowy wpis (brak ID w pliku)'];
+                if(!empty($displayName)) $changes['skipped'][] = ['name' => $displayName, 'reason' => 'Pominięto (brak ID w pliku)'];
             }
         }
         return view('competitions.import.summary', ['competition' => $competition, 'changes' => $changes]);
@@ -584,21 +576,14 @@ class CompetitionController extends Controller
 
     public function processImport(Request $request, Competition $competition)
     {
-        if (!session()->has('import_file_path')) {
+        if (!session()->has('import_file_path') || !session()->has('import_final_mappings')) {
             return redirect()->route('competitions.showImportForm', $competition)->with('error', 'Sesja wygasła. Proszę wgrać plik ponownie.');
         }
         $path = session('import_file_path');
         $disk = session('import_disk_name', 'local');
         $filePath = Storage::disk($disk)->path($path);
-
-        $finalMappingsFromSession = session('import_final_mappings', []);
-        $manualMappings = $request->input('column_mappings', []);
-        $finalMappings = array_merge($finalMappingsFromSession, $manualMappings);
-
-        if (empty($finalMappings)) {
-            $finalMappings = session('import_auto_mappings', []);
-        }
-
+        
+        $finalMappings = session('import_final_mappings');
         $mappingsForImporter = [];
         foreach ($finalMappings as $expectedHeader => $userProvidedHeader) {
             if (!empty($userProvidedHeader)) {
@@ -606,10 +591,6 @@ class CompetitionController extends Controller
             }
         }
         
-        if (empty($mappingsForImporter)) {
-            return redirect()->route('competitions.showImportForm', $competition)->with('error', 'Wystąpił błąd sesji lub nie zmapowano żadnych kolumn. Spróbuj ponownie.');
-        }
-
         DB::beginTransaction();
         try {
             Excel::import(new CompetitionsImport($competition, $mappingsForImporter), $filePath);
@@ -621,7 +602,7 @@ class CompetitionController extends Controller
             DB::rollBack();
             Log::error("Błąd importu Excela dla konkursu {$competition->id}: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             $errorMessage = $e->getMessage();
-            $redirectRoute = 'competitions.showMappingForm'; 
+            $redirectRoute = 'competitions.showMappingForm';
             if (str_contains($errorMessage, "Import przerwany: Weryfikacja wstępna pliku nie powiodła się")) {
                 return redirect()->route($redirectRoute, $competition)->with('error_critical', $errorMessage);
             }
