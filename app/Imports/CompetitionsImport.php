@@ -25,7 +25,7 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
 
     private const INITIAL_VERIFICATION_THRESHOLD_PERCENT = 0.5;
     private const INITIAL_VERIFICATION_ROWS_TO_CHECK_PERCENT = 0.1;
-    private const MIN_ROWS_TO_CHECK = 3;
+    private const MIN_ROWS_TO_CHECK = 2;
     private const MAX_ROWS_TO_CHECK = 20;
 
     public function __construct(Competition $competition, array $columnMappingsFromController = [])
@@ -68,7 +68,9 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
     public function prepareForValidation(array $data, int $index): array
     {
         foreach ($data as $key => &$value) {
-            if ($value !== null) {
+            if ($value === null) {
+                $value = '';
+            } else {
                 $value = (string)$value;
             }
         }
@@ -122,31 +124,19 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
 
             if ($registrationToUpdate && $registrationToUpdate->student) {
                 $student = $registrationToUpdate->student;
-                $studentDataToUpdate = [
-                    'name'           => $this->getRowValue($excelRowData, 'Imię ucznia', $student->name) ?? '',
-                    'last_name'      => $this->getRowValue($excelRowData, 'Nazwisko ucznia', $student->last_name) ?? '',
-                    'class'          => (string)($this->getRowValue($excelRowData, 'Klasa', $student->class) ?? ''),
-                    'school'         => $this->getRowValue($excelRowData, 'Nazwa szkoły', $student->school) ?? '',
-                    'school_address' => $this->getRowValue($excelRowData, 'Adres szkoły', $student->school_address) ?? '',
-                    'teacher'        => $this->getRowValue($excelRowData, 'Nauczyciel', $student->teacher) ?? '',
-                    'guardian'       => $this->getRowValue($excelRowData, 'Rodzic', $student->guardian) ?? '',
-                    'contact'        => $this->getRowValue($excelRowData, 'Kontakt', $student->contact) ?? '',
-                    'statement'      => $this->parseBoolean($this->getRowValue($excelRowData, 'Oświadczenie', $student->statement)),
-                ];
+                $studentDataToUpdate = ['name' => $this->getRowValue($excelRowData, 'Imię ucznia', $student->name) ?? '', 'last_name' => $this->getRowValue($excelRowData, 'Nazwisko ucznia', $student->last_name) ?? '', 'class' => (string)($this->getRowValue($excelRowData, 'Klasa', $student->class) ?? ''), 'school' => $this->getRowValue($excelRowData, 'Nazwa szkoły', $student->school) ?? '', 'school_address' => $this->getRowValue($excelRowData, 'Adres szkoły', $student->school_address) ?? '', 'teacher' => $this->getRowValue($excelRowData, 'Nauczyciel', $student->teacher) ?? '', 'guardian' => $this->getRowValue($excelRowData, 'Rodzic', $student->guardian) ?? '', 'contact' => $this->getRowValue($excelRowData, 'Kontakt', $student->contact) ?? '', 'statement' => $this->parseBoolean($this->getRowValue($excelRowData, 'Oświadczenie', $student->statement))];
                 $student->update($studentDataToUpdate);
-                $logChannel->info("Zaktualizowano studenta.", array_merge($logContext, ['student_id' => $student->id, 'registration_id' => $registrationToUpdate->id]));
+                $logChannel->info("Zaktualizowano studenta.", array_merge($logContext, ['student_id' => $student->id]));
 
                 if ($this->stages->isNotEmpty()) {
                     foreach ($this->stages as $stage) {
                         $stageSystemHeader = "{$stage->stage} ETAP";
                         $resultValue = $this->getRowValue($excelRowData, $stageSystemHeader);
-                        if ($resultValue !== null) {
-                            $finalResult = ($resultValue === '' || !is_numeric($resultValue)) ? null : (float)$resultValue;
-                            StageCompetition::updateOrCreate(
-                                ['competition_id' => $this->competition->id, 'stage_id' => $stage->id, 'student_id' => $student->id],
-                                ['result' => $finalResult]
-                            );
-                        }
+
+                        StageCompetition::updateOrCreate(
+                            ['competition_id' => $this->competition->id, 'stage_id' => $stage->id, 'student_id' => $student->id],
+                            ['result' => (string)$resultValue]
+                        );
                     }
                 }
             } else {
@@ -181,16 +171,13 @@ class CompetitionsImport implements ToCollection, WithHeadingRow, WithValidation
                 case 'Adres szkoły': $rule = ['nullable', 'string', 'max:1000']; break;
                 case 'Oświadczenie': $rule = ['nullable']; break;
                 default:
-                    if (str_contains($systemHeader, 'ETAP')) $rule = ['nullable', 'numeric'];
+                    if (str_contains($systemHeader, 'ETAP')) {
+                        $rule = ['nullable', 'string'];
+                    }
                     break;
             }
             if ($rule) $rules[$maatwebsiteKey] = $rule;
         }
         return $rules;
-    }
-
-    public function getRowValueForSummary(array $excelRowData, string $systemStandardHeaderName, $default = null)
-    {
-        return $this->getRowValue($excelRowData, $systemStandardHeaderName, $default);
     }
 }
