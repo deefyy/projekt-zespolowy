@@ -202,7 +202,7 @@
                         <form action="{{ route('students.destroy', $reg->student->id) }}" method="POST" class="inline-block" onsubmit="return confirm('{{ __("Are you sure you want to delete this student?") }}');">
                           @csrf
                           @method('DELETE')
-                          <button type="submit" class="text-red-500 hover:underline">{{ __('Delete') }}</button>
+                          <button type="submit" class="text-red-500 hover:underline" data-skip-lock>{{ __('Delete') }}</button>
                         </form>
                       @else
                         <span class="text-gray-400 italic">{{ __('No access') }}</span>
