@@ -229,5 +229,14 @@
     "No user found with that email.": "Nie znaleziono użytkownika o tym adresie e-mail.",
     "User must have the “organizator” role.": "Użytkownik musi posiadać rolę „organizator”.",
     "User is already a co-organizer.": "Użytkownik jest już współorganizatorem.",
-    "Co-organizer added and notified.": "Współorganizator został dodany i powiadomiony."
+    "Co-organizer added and notified.": "Współorganizator został dodany i powiadomiony.",
+    "File analysis error": "Błąd analizy pliku",
+    "The system could not find matching columns in your file. Please make sure the file has correct headers and try again.": "System nie był w stanie odnaleźć pasujących kolumn w Twoim pliku. Upewnij się, że plik ma poprawne nagłówki i spróbuj ponownie.",
+    "Go back and upload another file": "Wróć i wgraj inny plik",
+    "Below is a list of changes that will be applied upon confirmation. Please verify the data is correct.": "Poniżej znajduje się lista zmian, które zostaną zastosowane po zatwierdzeniu. Zweryfikuj poprawność danych.",
+    "New entry (ID from file not found in the database)": "Nowy wpis (ID z pliku nie znaleziono w bazie)",
+    "New entry (no ID in file)": "Nowy wpis (brak ID w pliku)",
+    "Confirm and Import": "Zatwierdź i zaimportuj",
+    "Search student...": "Szukaj ucznia...",
+    "Reset": "Resetuj"
 }
